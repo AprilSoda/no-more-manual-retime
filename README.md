@@ -1,6 +1,6 @@
 # No More Manual Retime
 
-**English** · [한국어](README.ko.md) · [Introduction page](https://vfx-compositor.github.io/no-more-manual-retime/)
+**English** · [한국어](README.ko.md) · [Introduction page](https://vfx-compositor.github.io/no-more-manual-retime/) · [Nukepedia](https://www.nukepedia.com/tools/python/misc/no-more-manual-retime-auto-retime-matching/)
 
 No More Manual Retime matches an editorial retime to its plate inside Nuke. Give it the offline edit movie and the original camera plate. It finds which plate frame every edit frame uses, then builds a TimeWarp, the matching reframe, and a QC difference tree for you.
 

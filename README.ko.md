@@ -1,6 +1,6 @@
 # No More Manual Retime
 
-[English](README.md) · **한국어** · [소개 페이지](https://vfx-compositor.github.io/no-more-manual-retime/)
+[English](README.md) · **한국어** · [소개 페이지](https://vfx-compositor.github.io/no-more-manual-retime/) · [Nukepedia](https://www.nukepedia.com/tools/python/misc/no-more-manual-retime-auto-retime-matching/)
 
 No More Manual Retime은 Nuke 안에서 편집본 리타임과 플레이트를 매치시킵니다. 오프라인 편집본과 원본 카메라 플레이트를 주면, 편집본의 각 프레임이 플레이트의 어느 프레임인지 찾아 TimeWarp, 맞는 리프레임, QC 차이 트리를 만들어 줍니다.
 
