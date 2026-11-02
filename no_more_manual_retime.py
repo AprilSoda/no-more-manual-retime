@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# No More Manual Retime 1.0.0
+# No More Manual Retime 1.0.1
 # Copyright (c) 2026 Jumin Park. MIT License, see LICENSE.
 # https://github.com/vfx-compositor/no-more-manual-retime
 # Usage: paste this file into the Nuke Script Editor and run it,
@@ -20,7 +20,7 @@ import sys
 
 
 # KO / EN visible UI and result text
-# The language preference is local-only in JM_auto_retime_ui.json.
+# The language preference is local-only in no_more_manual_retime_ui.json.
 # Stable node/knob names, paths, filenames and editable user text never pass
 # through the automatic visible-widget translator.
 _UI_LANGUAGE = None
@@ -40,8 +40,7 @@ def _normalize_ui_language(value):
 def _system_ui_language(locale_name=None, environ=None):
     """First run follows a Korean OS locale; every other locale safely falls back to EN."""
     env = os.environ if environ is None else environ
-    requested = _normalize_ui_language(env.get('NMMR_LANGUAGE') if 'NMMR_LANGUAGE' in env
-                                       else env.get('JM_AR_LANGUAGE'))
+    requested = _normalize_ui_language(env.get('NMMR_LANGUAGE'))
     if requested:
         return requested
     if locale_name is None:
@@ -89,11 +88,30 @@ def _contains_hangul(text):
     return bool(re.search(r'[\uac00-\ud7a3]', str(text or '')))
 
 
-def matching_similarity_advisory():
-    """Similarity is a matching diagnostic, not measured frame accuracy."""
-    return _t(
-        '매칭 일치도는 프레임 정확도가 아닙니다. 결과 곡선과 QC를 확인해 주세요.',
-        'Matching similarity is not frame accuracy. Inspect the result curve and QC.')
+def tc_agreement(res):
+    """(matched, total) of confident burn-in TC frames against the final path when TC was adopted, else None.
+    Vetoed and unkept TC frames count as not matched. No new computation of the path."""
+    plan = res.get('tc_plan') or {}
+    info = res.get('tc') or {}
+    if plan.get('mode') != 'first' or info.get('mode') != 'first':
+        return None
+    total = int(info.get('candidates') or 0)
+    if total <= 0:
+        return None
+    return max(0, int(info.get('used') or 0) - len(info.get('missed') or [])), total
+
+
+def frame_accuracy_text(res, korean=None):
+    """One line: measured TC agreement, or a plain statement that frame accuracy is unknown.
+    True frame accuracy needs ground truth, so no number is shown without adopted TC."""
+    ko = ui_language() != 'en' if korean is None else korean
+    pair = tc_agreement(res)
+    if pair:
+        pct = int(100.0 * pair[0] / pair[1])  # floor: never shows 100% with a miss
+        return (('TC 대조 일치 %d/%d프레임 (%d%%)' if ko else 'TC check matched %d/%d frames (%d%%)') % (pair[0], pair[1], pct))
+    if res.get('tc_plan'):
+        return '프레임 정확도: TC 미채택, QC로 확인' if ko else 'Frame accuracy: TC not adopted, check QC'
+    return '프레임 정확도: 번인 TC 없음, QC로 확인' if ko else 'Frame accuracy: no burn-in TC, check QC'
 
 
 _RESULT_REASON_EN = {
@@ -147,8 +165,8 @@ _UI_TEXT_EN = {
     '원본의 절반': 'Half source',
     'H.264 MOV 한 파일': 'Single H.264 MOV',
     'JPEG 시퀀스 (이름.####.jpg 폴더)': 'JPEG sequence (name.####.jpg folder)',
-    '노드그래프에서 선택한 Read 를 EDIT / PLATE 로 불러옵니다\n· MP 1개 → 그 샷 기준 (경로 설정이 있으면 최신 편집본 자동)\n· MP + 편집본 mov → 둘 다 그대로\n· MP 여러 개, 같은 샷 → 분할합성\n· MP 여러 개, 다른 샷 → 배치 탭':
-        'Load selected Reads as EDIT / PLATE.\n· One plate → its shot context (latest edit if Path setup is configured)\n· Plate + edit movie → use both\n· Multiple plates, same shot → split composite\n· Multiple plates, different shots → Batch tab',
+    '노드그래프에서 지금 선택한 Read 를 이 창의 EDIT / PLATE 입력으로 지정합니다. 창을 연 뒤 선택을 바꿨을 때 누릅니다.\n· MP 1개 → 그 샷 기준 (경로 설정이 있으면 최신 편집본 자동)\n· MP + 편집본 mov → 둘 다 그대로\n· MP 여러 개, 같은 샷 → 분할합성\n· MP 여러 개, 다른 샷 → 배치 탭':
+        'Assign the Reads currently selected in the Node Graph as the EDIT / PLATE inputs of this window. Press this after changing the selection with the window open.\n· One plate → its shot context (latest edit if Path setup is configured)\n· Plate + edit movie → use both\n· Multiple plates, same shot → split composite\n· Multiple plates, different shots → Batch tab',
     '경로 설정 (⌘, / Ctrl+,)\n샷 문맥 · 플레이트 · 편집본 폴더 구조를 경로 템플릿으로 지정합니다.\n설정 전에는 공유 폴더 탐색이 꺼져 있고 씬의 Read 만 씁니다':
         'Path setup (⌘, / Ctrl+,)\nDefine path templates for shot context, plates and edits.\nUntil configured, folder discovery is off and only scene Reads are used.',
     '새로고침 — 경로 설정의 편집본 / 플레이트와 씬 Read 목록을 다시 찾습니다\n(편집본 폴더를 다시 검색하므로 공유 폴더 상태에 따라 몇 초 걸릴 수 있습니다. 취소 가능)':
@@ -218,9 +236,8 @@ _UI_TEXT_EN = {
     '지정한 번인 TC 영역 바로 위에 표시합니다. 위쪽 여백이 없으면 아래. TC 영역 미지정 시 오른쪽 아래를 기준으로 배치하며 미지정을 표시합니다. 직접 위치는 라벨 왼쪽 위 기준입니다.':
         'Place above the saved burn-in TC region, or below if there is no room above. Without a region, use a lower-right fallback and show that the region is not set. Custom coordinates anchor the label top left.',
     '항상 위': 'Always on top',
-    '툴팁': 'Tooltips',
-    '툴팁 끔': 'Tooltips off',
-    '선택 노드 불러오기': 'Load selected nodes',
+    '툴팁 표시': 'Show tooltips',
+    '선택한 Read로 설정': 'Use selected Reads',
     '경로 설정': 'Path setup',
     '단일': 'Single',
     '배치': 'Batch',
@@ -235,7 +252,7 @@ _UI_TEXT_EN = {
     'TC 사전검사 (Beta)': 'TC preflight (Beta)',
     '렉TC 번인 사용': 'Use burn-in TC',
     'TC 보정…': 'Calibrate TC…',
-    '감지 / 생성 옵션': 'Detection / output options',
+    '감지 / 생성 옵션 · 툴팁 표시': 'Detection / output options · Show tooltips',
     '고급 옵션': 'Advanced options',
     '최대 배속': 'Maximum speed',
     '출력': 'Output',
@@ -368,8 +385,8 @@ _UI_TEXT_EN = {
         'Set the burn-in TC region (ROI) and test recognition across the clip. Saved calibration is reused by batch.',
     '임시 저장소의 상위 폴더를 고릅니다': 'Choose the parent folder for temporary storage.',
     '운영체제의 기본 임시 폴더로 되돌립니다': 'Return to the operating system default temporary folder.',
-    '현재 JM_auto_retime 임시 폴더를 Finder/탐색기에서 엽니다. 작업 중인 파일은 지우지 마세요':
-        'Open the current JM_auto_retime temporary folder. Do not delete files while a job is running.',
+    '현재 no_more_manual_retime 임시 폴더를 Finder/탐색기에서 엽니다. 작업 중인 파일은 지우지 마세요':
+        'Open the current no_more_manual_retime temporary folder. Do not delete files while a job is running.',
     '영구 ROI 마스크 폴더를 Finder/탐색기에서 엽니다':
         'Open the persistent ROI mask folder in Finder/Explorer.',
     '분할합성 ROI 마스크의 영구 로컬 경로입니다. 저장된 스크립트가 참조하므로 자동 삭제하지 않습니다.\n경로는 선택해 복사할 수 있으며, 직접 지우면 해당 Read가 깨질 수 있습니다.':
@@ -474,8 +491,8 @@ _UI_TEXT_EN.update({
         'Enter or review excluded ranges and pins as text. Changes stay synchronized with the timeline.',
     '배제할 EDIT 프레임 / 구간 (쉼표로 구분)': 'EDIT frames/ranges to exclude (comma-separated)',
     'EDIT=PLATE 대응 (쉼표로 구분)': 'EDIT=PLATE mappings (comma-separated)',
-    '노드그래프에서 선택한 Read 를 EDIT / PLATE 로 불러옵니다\n· MP 1개 → 그 샷 기준 (경로 설정이 있으면 최신 편집본 자동)\n· MP + 편집본 mov → 둘 다 그대로\n· MP 여러 개, 같은 샷 → 분할합성\n· MP 여러 개, 다른 샷 → 배치 탭':
-        'Load selected Read nodes as EDIT / PLATE.\n· One plate → use that shot (latest edit when paths are configured)\n· Plate + edit MOV → use both\n· Multiple plates, same shot → split composite\n· Multiple plates, different shots → Batch tab',
+    '노드그래프에서 지금 선택한 Read 를 이 창의 EDIT / PLATE 입력으로 지정합니다. 창을 연 뒤 선택을 바꿨을 때 누릅니다.\n· MP 1개 → 그 샷 기준 (경로 설정이 있으면 최신 편집본 자동)\n· MP + 편집본 mov → 둘 다 그대로\n· MP 여러 개, 같은 샷 → 분할합성\n· MP 여러 개, 다른 샷 → 배치 탭':
+        'Assign the Reads currently selected in the Node Graph as the EDIT / PLATE inputs of this window. Press this after changing the selection with the window open.\n· One plate → use that shot (latest edit when paths are configured)\n· Plate + edit MOV → use both\n· Multiple plates, same shot → split composite\n· Multiple plates, different shots → Batch tab',
     '경로 설정 (⌘, / Ctrl+,)\n샷 문맥 · 플레이트 · 편집본 폴더 구조를 경로 템플릿으로 지정합니다.\n설정 전에는 공유 폴더 탐색이 꺼져 있고 씬의 Read 만 씁니다':
         'Path setup (⌘, / Ctrl+,)\nDescribe the shot context, plate, and edit folders with path templates. Until configured, automatic folder search is off and only scene Reads are used.',
     '노드그래프에서 선택한 MP(시퀀스) Read 를 행으로 추가합니다\n같이 선택한 편집본 mov 는 샷코드로 짝지어 자동 최신 대신 사용합니다':
@@ -510,14 +527,14 @@ _UI_TEXT_EN.update({
         "Show the selected main-plate TC on every frame with a yellow 'MP' label. A corner avoiding edit burn-ins is chosen automatically; frame numbers are used when TC metadata is unavailable.",
     '폴더(또는 MOV 파일 경로 / JPEG 는 ####가 든 경로)를 지정합니다\n비워 두면 스크립트 옆 qc_review/':
         'Choose a folder, MOV path, or JPEG path containing ####. Leave empty to use qc_review/ beside the script.',
-    '분석 썸네일과 QC 임시 샘플을 선택한 폴더 아래 JM_auto_retime/에만 만듭니다.\n원본과 서버 미디어는 읽기만 하며 수정·이름 변경·삭제하지 않습니다. 실행 중에는 이 경로가 고정됩니다.\n작업 종료 때 사용한 캐시를 정리하고, 남은 파일은 [열기]로 확인해 작업이 없을 때 직접 지울 수 있습니다.\n분할합성 ROI 마스크는 아래에 표시된 영구 폴더에 따로 보존되며 임시 캐시 정리에서 제외됩니다.\n저장된 .nk 옆의 명시적 QC 리뷰도 임시 캐시가 아니며 이 설정으로 옮기지 않습니다.':
-        'Analysis thumbnails and temporary QC samples are created only under JM_auto_retime/ in the selected folder. Source and server media are read-only and are never modified, renamed, or deleted; the path is fixed while a job runs. Used caches are cleaned at job end, and remaining files may be reviewed with Open and removed manually while no job is running. Split-composite ROI masks are preserved separately in the persistent folder shown below and excluded from temporary-cache cleanup. Explicit QC reviews saved beside the .nk are not temporary caches and are not moved by this setting.',
+    '분석 썸네일과 QC 임시 샘플을 선택한 폴더 아래 no_more_manual_retime/에만 만듭니다.\n원본과 서버 미디어는 읽기만 하며 수정·이름 변경·삭제하지 않습니다. 실행 중에는 이 경로가 고정됩니다.\n작업 종료 때 사용한 캐시를 정리하고, 남은 파일은 [열기]로 확인해 작업이 없을 때 직접 지울 수 있습니다.\n분할합성 ROI 마스크는 아래에 표시된 영구 폴더에 따로 보존되며 임시 캐시 정리에서 제외됩니다.\n저장된 .nk 옆의 명시적 QC 리뷰도 임시 캐시가 아니며 이 설정으로 옮기지 않습니다.':
+        'Analysis thumbnails and temporary QC samples are created only under no_more_manual_retime/ in the selected folder. Source and server media are read-only and are never modified, renamed, or deleted; the path is fixed while a job runs. Used caches are cleaned at job end, and remaining files may be reviewed with Open and removed manually while no job is running. Split-composite ROI masks are preserved separately in the persistent folder shown below and excluded from temporary-cache cleanup. Explicit QC reviews saved beside the .nk are not temporary caches and are not moved by this setting.',
     'PLATE 영역 자동 · TC 영역 전역 보정 · 사전검사 전': 'PLATE region automatic · TC region global calibration · Preflight not run',
     '영역 지정됨 · 테스트 100%': 'Region set · Test 100%',
     '전체 기록은 [로그] 를 펼쳐 확인할 수 있습니다': 'Expand Log to see the full record.',
     '옵션 기본값 사용': 'Using default options',
-    '기준: 스크립트\n스크립트 경로가 샷 문맥 템플릿에 맞지 않아 서버 자동 소스(최신 편집본 / 플레이트)가 없습니다.\n[경로 설정] 의 [현재 스크립트로 테스트] 로 어디서 멈췄는지 볼 수 있습니다.\n씬의 Read 는 그대로 고를 수 있습니다.\n\n노드그래프에서 MP Read 를 선택하고 [선택 노드 불러오기]를 누르면\n그 샷 기준으로 다시 찾습니다':
-        'Context: script\nThe script path does not match a shot-context template, so no automatic source was found. Use Test with current script in Path setup to see where resolution stopped. Scene Reads remain available.\n\nSelect a plate Read in the Node Graph and click Load selected nodes to search again using that shot context.',
+    '기준: 스크립트\n스크립트 경로가 샷 문맥 템플릿에 맞지 않아 서버 자동 소스(최신 편집본 / 플레이트)가 없습니다.\n[경로 설정] 의 [현재 스크립트로 테스트] 로 어디서 멈췄는지 볼 수 있습니다.\n씬의 Read 는 그대로 고를 수 있습니다.\n\n노드그래프에서 MP Read 를 선택하고 [선택한 Read로 설정]를 누르면\n그 샷 기준으로 다시 찾습니다':
+        'Context: script\nThe script path does not match a shot-context template, so no automatic source was found. Use Test with current script in Path setup to see where resolution stopped. Scene Reads remain available.\n\nSelect a plate Read in the Node Graph and click Use selected Reads to search again using that shot context.',
 })
 
 _UI_TEXT_EN.update({
@@ -583,7 +600,6 @@ _UI_DYNAMIC_FRAGMENT_EN = (
     ('없음 (저장하면 만듦)', 'not found (created when saved)'),
     ('공용 설정 없음', 'No shared settings'),
     ('공용 파일은 환경변수 NMMR_PATHS 로 지정', 'set a shared file with the NMMR_PATHS environment variable'),
-    ('공용 파일은 환경변수 JM_AR_PATHS 로 지정', 'set a shared file with the JM_AR_PATHS environment variable'),
     ('빈 칸 = default', 'empty fields use defaults'),
     ('마지막으로 커서가 있던 템플릿 칸에 ', 'Insert '),
     (' 를 넣습니다', ' in the last focused template field'),
@@ -738,6 +754,9 @@ def batch_display_status(status):
                        ('(확인 필요)', '(review required)'), ('(좋음)', '(Good)'), ('(보통)', '(Fair)'), ('(낮음)', '(Low)')):
             text = text.replace(ko, en)
         text = re.sub(r'TC 오프셋 ([+-]?\d+) 의심 · 미사용', r'Possible TC offset \1 · unused', text)
+        text = re.sub(r'TC 대조 일치 (\d+)/(\d+)프레임', r'TC check matched \1/\2 frames', text)
+        text = text.replace('프레임 정확도: TC 미채택, QC로 확인', 'Frame accuracy: TC not adopted, check QC')
+        text = text.replace('프레임 정확도: 번인 TC 없음, QC로 확인', 'Frame accuracy: no burn-in TC, check QC')
         text = re.sub(r' 외 (\d+)구간', r' +\1 ranges', text)
         text = re.sub(r' 외 (\d+)', r' +\1 more', text)
         text = re.sub(r'확인 (\d+)프레임', r'Review \1 frames', text)
@@ -768,8 +787,8 @@ def _retime_unavailable_text(reason):
 
 
 # numpy bootstrap - install without a terminal (inlined in this file; pure functions are verified by the core tests)
-# Lookup: same folder rule as init.py, ~/.nuke_pylibs/py<major><minor> (JM_PYLIBS_ROOT changes the root)
-# shared folders from JM_NUMPY_PATH (os.pathsep separated), and shared folders saved from the window
+# Lookup: same folder rule as init.py, ~/.nuke_pylibs/py<major><minor> (NMMR_PYLIBS_ROOT changes the root)
+# shared folders from NMMR_NUMPY_PATH (os.pathsep separated), and shared folders saved from the window
 # Install: (A) unpack an offline numpy wheel from vendor/ with zipfile (B) online: Nuke's bundled python -m pip install --target
 # (C) point to a shared folder. After installing, retry the import without restarting. UI is show_numpy_installer
 np = None
@@ -778,7 +797,7 @@ _NP_ERR = ''
 
 def _pylibs_root(environ=None, home=None):
     env = os.environ if environ is None else environ
-    r = env.get('JM_PYLIBS_ROOT')
+    r = env.get('NMMR_PYLIBS_ROOT')
     if r:
         return os.path.expanduser(r)
     return os.path.join(home or os.path.expanduser('~'), '.nuke_pylibs')
@@ -795,10 +814,10 @@ def _split_paths(value):
 
 
 def _np_extra_paths(environ=None, saved=None):
-    """folders to search for numpy (existing ones only, order kept): user pylibs -> JM_NUMPY_PATH -> saved shared folders"""
+    """folders to search for numpy (existing ones only, order kept): user pylibs -> NMMR_NUMPY_PATH -> saved shared folders"""
     env = os.environ if environ is None else environ
     out = []
-    for p in [_pylibs_dir(_pylibs_root(env))] + _split_paths(env.get('JM_NUMPY_PATH')) + _split_paths(saved):
+    for p in [_pylibs_dir(_pylibs_root(env))] + _split_paths(env.get('NMMR_NUMPY_PATH')) + _split_paths(saved):
         p = os.path.expanduser(p)
         if p not in out and os.path.isdir(p):
             out.append(p)
@@ -963,10 +982,10 @@ def _whl_pick(filenames, host=None, name='numpy'):
 
 
 def _vendor_dirs(extra=None, environ=None, module_file=None):
-    """Folders to search for wheels: user-specified -> JM_AUTO_RETIME_VENDOR -> <install folder>/vendor -> <parent of install folder>/vendor"""
+    """Folders to search for wheels: user-specified -> NMMR_VENDOR -> <install folder>/vendor -> <parent of install folder>/vendor"""
     env = os.environ if environ is None else environ
     out = []
-    for p in _split_paths(extra) + _split_paths(env.get('JM_AUTO_RETIME_VENDOR')):
+    for p in _split_paths(extra) + _split_paths(env.get('NMMR_VENDOR')):
         out.append(os.path.expanduser(p))
     mf = module_file if module_file is not None else globals().get('__file__')
     if mf:
@@ -1070,12 +1089,12 @@ def _np_manual_text(host, target_dir):
     """Manual install text used when Qt is unavailable too (or as failure guidance)"""
     return (_t('numpy 가 필요합니다 (Python %d.%d / %s %s).\n'
             '설치 위치: %s\n'
-            '- 오프라인: 배포 폴더 vendor/ 의 numpy 휠을 같은 위치에 두거나 환경변수 JM_AUTO_RETIME_VENDOR 로 지정\n'
-            '- 공용: numpy 가 있는 폴더를 환경변수 JM_NUMPY_PATH 로 지정',
+            '- 오프라인: 배포 폴더 vendor/ 의 numpy 휠을 같은 위치에 두거나 환경변수 NMMR_VENDOR 로 지정\n'
+            '- 공용: numpy 가 있는 폴더를 환경변수 NMMR_NUMPY_PATH 로 지정',
             'numpy is required (Python %d.%d / %s %s).\n'
             'Installation folder: %s\n'
-            '- Offline: place a compatible numpy wheel in vendor/ beside the distribution, or set JM_AUTO_RETIME_VENDOR\n'
-            '- Shared: set JM_NUMPY_PATH to the folder containing numpy')
+            '- Offline: place a compatible numpy wheel in vendor/ beside the distribution, or set NMMR_VENDOR\n'
+            '- Shared: set NMMR_NUMPY_PATH to the folder containing numpy')
             % (host['py'][0], host['py'][1], host['os'], host['arch'], target_dir))
 
 
@@ -1115,14 +1134,12 @@ def _console(text):
         print('[No More Manual Retime] ' + str(text))
 
 
-JM_AR_VERSION = '1.0.0'
-JM_AR_RELEASE_VERSION = '1.0.0'
-JM_AR_DISPLAY_VERSION = JM_AR_RELEASE_VERSION
+NMMR_VERSION = '1.0.1'
+NMMR_RELEASE_VERSION = '1.0.1'
+NMMR_DISPLAY_VERSION = NMMR_RELEASE_VERSION
 
 NODE_PREFIX = 'NMMR_'
-LEGACY_NODE_PREFIX = 'JM_AR_'
 TIMEWARP_NODE_NAME = 'NMMR_timewarp'
-LEGACY_TIMEWARP_NODE_NAME = 'JM_timewarp'
 
 
 def _node_name(suffix):
@@ -1131,19 +1148,15 @@ def _node_name(suffix):
 
 
 def _node_name_startswith(value, suffix):
-    """Recognize current and pre-4.20 node prefixes without renaming either."""
+    """Recognize generated node names by prefix."""
     name = value.name() if hasattr(value, 'name') else str(value)
-    return any(name.startswith(prefix + suffix)
-               for prefix in (NODE_PREFIX, LEGACY_NODE_PREFIX))
+    return name.startswith(NODE_PREFIX + suffix)
 
 
 def _is_tool_node_name(value):
-    """Recognize generated nodes from current and legacy scripts."""
+    """Recognize generated nodes."""
     name = value.name() if hasattr(value, 'name') else str(value)
-    if name.startswith((NODE_PREFIX, LEGACY_NODE_PREFIX)):
-        return True
-    return any(name == base or re.match(r'^%s_\d+$' % re.escape(base), name)
-               for base in (TIMEWARP_NODE_NAME, LEGACY_TIMEWARP_NODE_NAME))
+    return name.startswith(NODE_PREFIX)
 
 W_EDIT = 128  # matching resolution (EDIT thumbnail width)
 W_PLATE = 256  # PLATE thumbnail width (2x for optical zoom)
@@ -1249,7 +1262,7 @@ CACHE_DAYS = 7
 _USED_DIRS = set()  # thumbnail folders used in this run
 _ACTIVE_TEMP_BASE = None  # user-selected path fixed when the run starts. The tempfile global / environment variables are not changed
 _ACTIVE_TEMP_CUSTOM = None  # distinguishes the empty default from a user-chosen path at the persisted file location
-_TEMP_NAMESPACE = 'JM_auto_retime'
+_TEMP_NAMESPACE = 'no_more_manual_retime'
 _TEMP_KINDS = ('cache', 'qc_samples', 'reviews', 'roi_masks', 'ui_assets')
 THUMB_VER = 'v21'
 
@@ -2709,6 +2722,7 @@ def _dp_jump(Un, info):
     back = np.zeros((E, Pn), np.int32)
     cap = np.float32(DP_CAP)
     for t in range(1, E):
+        _watch_tick(t, E, 'analysis')
         trans = np.minimum(DP_LAMBDA * np.abs(delta - np.float32(v[t])), cap)
         tot = trans + D[None, :]
         q = np.argmin(tot, axis=1)
@@ -4611,9 +4625,8 @@ def match_animated(E_lum, P_lum, trk, mask, E_valid, P_valid, path0, win=25, pro
     return U, path, m, coords
 
 
-# lagging-TC burn-in recognition - jm_tc_ocr 1.0.0 inlined (numpy only without external OCR, single file for pasting into the Script Editor)
-# Pasted as-is from the TCO_VERSION line of the original python/jm_tc_ocr.py to the end of the file (tco_ / TCO_ prefixes, built-in font dictionary included).
-# If the original is changed, replace this block too - run tests/test_jm_tc_ocr.py with JM_TCO_TARGET=inline to confirm the same results.
+# lagging-TC burn-in recognition - nmmr_tc_ocr 1.0.0 inlined (numpy only without external OCR, single file for pasting into the Script Editor)
+# tco_ / TCO_ prefixes, built-in font dictionary included.
 # Flow: fixed cell split -> grayscale cell features -> font dictionary + nearest clip-trained examples + LDA -> hard digit-range constraints ->
 # temporal decoding (Viterbi, no +1-per-frame assumption: hold / ramp / reverse / jump) -> confidence (max-marginal margin + constant-digit gate)
 # > 2 rounds of self-calibration with the changing digits. Confident values must not be wrong (zero misreads first), the rest are None
@@ -4642,7 +4655,7 @@ def tc_to_frames(tc, fps):
     return ((h * 60 + m) * 60 + s_) * n + f
 
 
-# jm_tc_ocr 1.0.0 (inline)
+# nmmr_tc_ocr 1.0.0 (inline)
 TCO_VERSION = '1.0.0'
 TCO_CELL = (24, 16)  # feature grid (H, W) per digit cell
 TCO_N_CHARS = 11  # HH:MM:SS:FF
@@ -5282,7 +5295,7 @@ def tco_read_sequence(imgs, fps=24, cfg=None, iters=2, use_prior=True, layout=No
                   conf_min=None, extra=None, log=None):
     """
     imgs: per-frame ROI luma images (display gamma, any polarity) or None.
-    cfg : JM_auto_retime TC cfg (optional). cfg['ocr2'] exemplars are used when present.
+    cfg : no_more_manual_retime TC cfg (optional). cfg['ocr2'] exemplars are used when present.
     extra: (ex, lab) exemplars learned elsewhere, e.g. from the record TC of the same clip
            (same burn-in font, bigger and easier) - result['learned'] of that read.
     Returns dict:
@@ -5864,7 +5877,7 @@ _TCO_PRIOR_B64 = (
 )
 
 
-# link to JM_auto_retime
+# link to no_more_manual_retime
 def tc_decode_rows(src_imgs, cfg=None, fps=24, log=None, keep_model=False):
     """ same (rows, summary) as tco_decode_sequence + summary['raw'] = dict(values, margin)
     (decoded values / margins of frames that were not confident - for weak hints in TC-first mode). The rest of rows / summary is the same as the original
@@ -8286,7 +8299,7 @@ def temp_storage_base(custom=None, system_temp=None):
     """Return the selected base folder without touching tempfile globals.
 
     An empty preference preserves the historical system-temp default.  The tool
-    always writes through a dedicated ``JM_auto_retime`` child directory.
+    always writes through a dedicated ``no_more_manual_retime`` child directory.
     """
     value = custom
     if value is None:
@@ -8316,7 +8329,7 @@ def validate_temp_storage(custom=None):
     probe = None
     try:
         if os.path.lexists(root) and os.path.islink(root):
-            raise ValueError(_t('JM_auto_retime 폴더가 심볼릭 링크입니다', 'JM_auto_retime folder is a symbolic link'))
+            raise ValueError(_t('no_more_manual_retime 폴더가 심볼릭 링크입니다', 'no_more_manual_retime folder is a symbolic link'))
         if not os.path.isdir(root):
             os.makedirs(root)
         for kind in _TEMP_KINDS:
@@ -8382,7 +8395,7 @@ def temp_storage_job(custom=None):
     return _TempStorageJob(custom)
 
 
-def make_temp_dir(kind, prefix='JM_AR_'):
+def make_temp_dir(kind, prefix='NMMR_'):
     validate_temp_storage(_ACTIVE_TEMP_BASE)
     return tempfile.mkdtemp(prefix=prefix, dir=temp_storage_path(kind))
 
@@ -8391,7 +8404,7 @@ def _owned_temp_kind_root(path, kind):
     """Validate the lexical namespace/kind boundary at deletion time.
 
     The selected base itself may be a symlink, but the tool-owned
-    ``JM_auto_retime`` namespace and its kind folder must be real directories.
+    ``no_more_manual_retime`` namespace and its kind folder must be real directories.
     Checking before realpath prevents a post-validation symlink swap from
     turning cleanup into deletion outside the namespace.
     """
@@ -8639,14 +8652,12 @@ def _set(node, knob, value):
 
 # path templates - server auto source (user-defined, no default)
 # If the setting is empty, server lookup is off and only the Reads in the script are used (load selected node / auto detect).
-# Settings files layer in this order: shared (env var JM_AR_PATHS = json path, several separated by os.pathsep) -> personal (~/.nuke/JM_auto_retime_paths.json)
+# Settings files layer in this order: shared (env var NMMR_PATHS = json path, several separated by os.pathsep) -> personal (~/.nuke/no_more_manual_retime_paths.json)
 # (later wins, empty values keep the earlier value). Everything below is pure functions - verified by the core tests without Nuke
 # Template syntax: {root} {project} {seq} {shot} {layer} {version} (+ plate {ext}), * = any characters inside one folder
 # frame slot = #### / %04d / $F4 / {frame}. {root} may span several folders, {version} is a number, the rest stay inside one folder
 PATHS_ENV = 'NMMR_PATHS'
-PATHS_ENV_LEGACY = 'JM_AR_PATHS'
 PATHS_USER_FILE = os.path.join(os.path.expanduser('~'), '.nuke', 'no_more_manual_retime_paths.json').replace('\\', '/')
-PATHS_USER_FILE_LEGACY = os.path.join(os.path.expanduser('~'), '.nuke', 'JM_auto_retime_paths.json').replace('\\', '/')
 PATH_TOKENS = ('root', 'project', 'seq', 'shot', 'layer', 'version')
 PATHS_DEFAULTS = {
     'enabled': True,
@@ -8742,12 +8753,11 @@ def _paths_read(label, path):
 
 
 def paths_layers(user_file=None, env=None):
-    """Shared paths (new environment name wins, even empty), then personal settings."""
+    """Shared paths, then personal settings."""
     if env is None:
-        env = os.environ.get(PATHS_ENV) if PATHS_ENV in os.environ else os.environ.get(PATHS_ENV_LEGACY, '')
+        env = os.environ.get(PATHS_ENV, '')
     out = [_paths_read('공용', p.strip()) for p in str(env or '').split(os.pathsep) if p.strip()]
-    path = user_file or (PATHS_USER_FILE if os.path.exists(PATHS_USER_FILE)
-                         or not os.path.exists(PATHS_USER_FILE_LEGACY) else PATHS_USER_FILE_LEGACY)
+    path = user_file or PATHS_USER_FILE
     out.append(_paths_read('개인', path))
     return out
 
@@ -8762,7 +8772,7 @@ def _settings_overlay(base, changes):
 
 
 def save_paths_cfg(changes, clear_keys=()):
-    """Write only the new personal path; migrate legacy values on first save."""
+    """Write the personal settings file."""
     import json
     layer = paths_layers(env='')[-1]
     if layer.get('error'):
@@ -8843,8 +8853,6 @@ def paths_settings_summary(user, studio, env_name=PATHS_ENV):
         text += _t(
             '\n공용 설정 없음 (공용 파일은 환경변수 %s 로 지정). 빈 칸 = 기본값',
             '\nNo shared settings (set a shared file with the %s environment variable). Empty fields use defaults.') % env_name
-    text += _t('\n새 이름으로 저장합니다. 옛 이름(JM_AR_PATHS, JM_auto_retime_paths.json)도 계속 읽습니다.',
-               '\nSaves use the new names. Legacy names (JM_AR_PATHS, JM_auto_retime_paths.json) are still read.')
     return text
 
 
@@ -10146,6 +10154,13 @@ _INPUT_READ_SKIP_CLASSES = frozenset(('Tab_Knob', 'Text_Knob', 'PyScript_Knob', 
                                       'Obsolete_Knob', 'Link_Knob', 'Button_Knob'))
 
 
+def _is_default_colorspace(value):
+    """True for Nuke's default colorspace display value, e.g. 'default (scene_linear)'.
+    That text is a label for the unset state: writing it back makes a literal, invalid LUT name."""
+    text = str(value or '').strip().strip('"').strip()
+    return text == 'default' or text.startswith('default (')
+
+
 def _copy_read_settings(source, read):
     """ copy the original Read's file (expression as is) -> then the remaining media knobs (range, colorspace, raw, frame mapping, format, etc.) in order.
     file must be set first so the per-file-format knobs (mov64_*, etc.) exist. Knobs with equal values are left alone"""
@@ -10163,6 +10178,8 @@ def _copy_read_settings(source, read):
             if knob.Class() in _INPUT_READ_SKIP_CLASSES:
                 continue
             value = knob.toScript()
+            if 'colorspace' in key.lower() and _is_default_colorspace(value):
+                continue  # a default stays the new Read's own default
             if knobs[key].toScript() != value:
                 knobs[key].fromScript(value)
         except Exception:
@@ -10290,7 +10307,7 @@ def finalize_group(nodes, label, log=print, head='No More Manual Retime', status
 
 def process_error_owned_nodes(error):
     """Nodes explicitly registered by process_job before a non-cancellation failure."""
-    nodes = getattr(error, 'jm_ar_owned_nodes', ())
+    nodes = getattr(error, 'nmmr_owned_nodes', ())
     return [node for node in nodes if node is not None]
 
 
@@ -10581,6 +10598,29 @@ def _render_luma_nodes(node, d, first, last, incr, box, crop_reformat, W, H, blu
                 pass
 
 
+RENDER_CHUNK = 12  # frames per nuke.execute while a window is watching
+_RENDER_WATCH = None  # window callback (done, total, tag); may raise Cancelled
+
+
+def set_render_watch(watch):
+    """Install the progress callback for frame renders. Returns the previous one. None = single uninterrupted render."""
+    global _RENDER_WATCH
+    previous, _RENDER_WATCH = _RENDER_WATCH, watch
+    return previous
+
+
+def _watch_tick(index, count, tag):
+    """Keep the watching window alive during per-frame loading loops."""
+    if _RENDER_WATCH is not None and index % 48 == 0:
+        _RENDER_WATCH(index, count, tag)
+
+
+def render_chunks(first, last, incr, size=RENDER_CHUNK):
+    """[(first, last)] covering first..last with the same frames as one render over the whole range."""
+    frames = list(range(first, last + 1, incr))
+    return [(frames[i], frames[min(i + size, len(frames)) - 1]) for i in range(0, len(frames), size)]
+
+
 def _ensure(node, d, first, last, incr, box, crop_reformat, W, H, blur, reuse, log, tag, rgb=False):
     """"""
     import time
@@ -10601,8 +10641,19 @@ def _ensure(node, d, first, last, incr, box, crop_reformat, W, H, blur, reuse, l
     t0 = time.time()
     log('render %s %s %d-%d x%d (%d f) @%dx%d' % (tag, node.name(), missing[0], missing[-1], incr,
                                                    len(missing), W, H))
-    with NoUndo():
-        _render_luma(node, d, missing[0], missing[-1], incr, box, crop_reformat, W, H, blur, log, rgb)
+    chunks = render_chunks(missing[0], missing[-1], incr)
+    if _RENDER_WATCH is None or len(chunks) < 2:
+        chunks = [(missing[0], missing[-1])]
+    total = len(range(missing[0], missing[-1] + 1, incr))
+    done = 0
+    for start, end in chunks:
+        if _RENDER_WATCH is not None:
+            _RENDER_WATCH(done, total, tag)
+        with NoUndo():
+            _render_luma(node, d, start, end, incr, box, crop_reformat, W, H, blur, log, rgb)
+        done += len(range(start, end + 1, incr))
+    if _RENDER_WATCH is not None:
+        _RENDER_WATCH(total, total, tag)
     return len(missing), time.time() - t0
 
 
@@ -10646,6 +10697,7 @@ def _load_dir(d, frames, H, W, log):
     arr = np.zeros((len(frames), H, W), np.float32)
     ok = np.zeros(len(frames), bool)
     for i, f in enumerate(frames):
+        _watch_tick(i, len(frames), 'load')
         fp = '%s/t.%06d.exr' % (d, f)
         try:
             img = exr_luma(fp)
@@ -10683,6 +10735,7 @@ def load_preview(node, frames, log=print):
     arr = np.zeros((len(frames), H, W_PREVIEW, 3), np.float32)
     ok = np.zeros(len(frames), bool)
     for i, f in enumerate(frames):
+        _watch_tick(i, len(frames), 'load')
         try:
             ch = read_exr('%s/t.%06d.exr' % (d, f))
             keys = dict((k.split('.')[-1].upper(), k) for k in ch)
@@ -10714,7 +10767,7 @@ def _qc_read_rgb(path, height, width, alpha=False):
 
 def _qc_sample_rgba(node, frames, height, width, log=print, cancelled=None):
     """Fresh sparse samples of the final graph; all temporary files are owned."""
-    directory = make_temp_dir('qc_samples', prefix='JM_AR_qc_grade_')
+    directory = make_temp_dir('qc_samples', prefix='NMMR_qc_grade_')
     try:
         fmt = node.format()
         box = (0, 0, fmt.width(), fmt.height())
@@ -11023,7 +11076,7 @@ def store_secondary_qc_metadata(created, result, log=print):
                      and _node_name_startswith(item, 'QC_diff_')), None)
         if node is None:
             raise ValueError('QC Difference node is unavailable')
-        name = 'jm_ar_secondary_qc'
+        name = 'nmmr_secondary_qc'
         if name not in node.knobs():
             knob = nuke.String_Knob(name, '')
             invisible = getattr(nuke, 'INVISIBLE', None)
@@ -11292,6 +11345,15 @@ def lookup_interpolation(value):
     return value if value in ('linear', 'legacy') else 'linear'
 
 
+def _record_curve_for_redo(knob):
+    """Animation edits are not recorded by Nuke's undo: without this, redo brings back an empty curve.
+    Writing the same curve through the knob stores it (values keep at least 1e-4 frame precision)."""
+    try:
+        knob.fromScript(knob.toScript())
+    except Exception:
+        pass
+
+
 def _apply_timewarp(tw, keys_int, slow, out_first, lookup=None, sub_spans=(), interpolation='linear'):
     """
     Default: keep a key and value on every frame and interpolate linearly. legacy is the old constant/slow linear.
@@ -11317,6 +11379,7 @@ def _apply_timewarp(tw, keys_int, slow, out_first, lookup=None, sub_spans=(), in
             anim.changeInterpolation(const, nuke.CONSTANT)
         if lin:
             anim.changeInterpolation(lin, nuke.LINEAR)
+        _record_curve_for_redo(k)
         return
     inside = set()
     edge = {}
@@ -11342,6 +11405,7 @@ def _apply_timewarp(tw, keys_int, slow, out_first, lookup=None, sub_spans=(), in
         anim.changeInterpolation(const, nuke.CONSTANT)
     if lin:
         anim.changeInterpolation(lin, nuke.LINEAR)
+    _record_curve_for_redo(k)
 
 
 def _uname(base):
@@ -11356,7 +11420,7 @@ def _uname(base):
 
 def _edit_format(edit):
     ef = edit.format()
-    fmt_name = 'JM_AR_%dx%d' % (ef.width(), ef.height())
+    fmt_name = 'NMMR_%dx%d' % (ef.width(), ef.height())
     for f in nuke.formats():
         if f.name() == fmt_name:
             return f, fmt_name
@@ -11403,8 +11467,8 @@ def validate_region_storage(custom=None, user_config=None):
     probe = None
     try:
         if os.path.lexists(namespace) and os.path.islink(namespace):
-            raise ValueError(_t('JM_auto_retime 폴더가 심볼릭 링크입니다',
-                                'The JM_auto_retime folder is a symbolic link'))
+            raise ValueError(_t('no_more_manual_retime 폴더가 심볼릭 링크입니다',
+                                'The no_more_manual_retime folder is a symbolic link'))
         if not os.path.isdir(namespace):
             os.makedirs(namespace)
         if os.path.lexists(path) and os.path.islink(path):
@@ -11736,7 +11800,7 @@ def _apply_qc_grade_branch(created, tr, look, tag=''):
     if tr is None or look.get('status') != 'applied':
         return tr, None
     differences = [node for node in created if node.Class() == 'Merge2'
-                   and _node_name_startswith(node, 'QC_diff_') and node.input(1) is tr]
+                   and _node_name_startswith(node, 'QC_diff_') and node.input(0) is tr]
     if not differences:
         return tr, None
     params = look['params']
@@ -11770,13 +11834,13 @@ def _apply_qc_grade_branch(created, tr, look, tag=''):
             pass
         grade.setXYpos(tr.xpos(), tr.ypos() + 60)
         for node in differences:
-            node.setInput(1, grade)
+            node.setInput(0, grade)
         created.append(grade)
         align_qc_diff_to_input(differences, grade, created)
         return grade, grade
     except Exception:
         for node in differences:
-            node.setInput(1, tr)
+            node.setInput(0, tr)
         if grade is not None:
             nuke.delete(grade)
         raise
@@ -11789,11 +11853,11 @@ def _node_height(node):
         return 0
 
 
-def align_qc_diff_to_input(differences, a_node, created=()):
-    """ make the A input line of the QC Difference horizontal: Merge center y = center y of the A input node (look Grade or Transform).
+def align_qc_diff_to_input(differences, plate_node, created=()):
+    """ make the plate (B) input line of the QC Difference horizontal: Merge center y = center y of the plate node (look Grade or Transform).
     The Dot below the Merge moves down by the same amount to keep the gap."""
     for mg in differences:
-        want = a_node.ypos() + (_node_height(a_node) - _node_height(mg)) // 2
+        want = plate_node.ypos() + (_node_height(plate_node) - _node_height(mg)) // 2
         delta = int(want - mg.ypos())
         if not delta:
             continue
@@ -11947,8 +12011,8 @@ def build_nodes(edit, plate, res, plate_first, out_first, edit_qc=None, qc_ancho
     dy = LAY['mg_step'] * qc_index
     mg = _register_owned(nuke.nodes.Merge2(
         operation='difference', name=_uname(_node_name('QC_diff_' + tag))), owned_nodes)
-    mg.setInput(0, edit_qc)
-    mg.setInput(1, tr)
+    mg.setInput(0, tr)  # B = plate
+    mg.setInput(1, edit_qc)  # A = edit
     mg.setXYpos(ax + LAY['mg'][0], ay + LAY['mg'][1] + dy)
     dot = _register_owned(nuke.nodes.Dot(), owned_nodes)
     dot.setInput(0, mg)
@@ -11998,8 +12062,17 @@ def output_timecode_plan(edit_tc, edit_fps, plate_base=None, plate_offset=0):
     return dict(source='none', startcode=frames_to_tc(0, fps), fps=fps, frames=0)
 
 
+def output_timecode_message(plan, out_first):
+    """Text node message: a running timecode, TCL only so it renders on any machine.
+    The first output frame shows plan['startcode']."""
+    rate = max(1, int(round(float(plan['fps']))))
+    count = '(%d+[frame]-%d)' % (int(plan['frames']), int(out_first))
+    return ('[format %%02d:%%02d:%%02d:%%02d [expr %(n)s/%(h)d] [expr (%(n)s/%(m)d)%%60] '
+            '[expr (%(n)s/%(r)d)%%60] [expr %(n)s%%%(r)d]]') % dict(n=count, h=rate * 3600, m=rate * 60, r=rate)
+
+
 def output_timecode_label(plan, out_first):
-    """ AddTimeCode label: which TC it came from + the first output frame"""
+    """ output TC node label: which TC it came from + the first output frame"""
     if plan['source'] == 'edit':
         return _t('EDIT TC %s @ %d', 'EDIT TC %s @ %d') % (plan['startcode'], out_first)
     if plan['source'] == 'plate':
@@ -12020,8 +12093,9 @@ def output_tree_tail(created, grade=None):
 
 def add_output_timecode(created, tail, edit, plate, edit_first, plate_first, res, out_first,
                         owned_nodes=None, log=print):
-    """ AddTimeCode (NMMR_timecode_<PLATE>) at the end of the output tree: so the output carries the EDIT's TC (start code = TC of the first EDIT frame,
-    frame = first output frame). If the EDIT TC is unknown, the TC of the plate frame used by the first output frame + shown in the label. Returns (node, plan)"""
+    """Text overlay (NMMR_timecode_<PLATE>) at the end of the output tree, after the QC branch point so QC is unaffected:
+    the running EDIT TC (first output frame = TC of the first EDIT frame). If the EDIT TC is unknown, the TC of the plate frame
+    used by the first output frame + shown in the label. Returns (node, plan)"""
     if tail is None:
         return None, None
     try:
@@ -12035,13 +12109,12 @@ def add_output_timecode(created, tail, edit, plate, edit_first, plate_first, res
         base = None
     offset = int(plate_first) + int(res['path'][0]) - int(plate.firstFrame())
     plan = output_timecode_plan(edit_tc, edit_fps, base, offset)
-    node = _register_owned(nuke.nodes.AddTimeCode(name=_uname(_node_name('timecode_' + plate.name()))), owned_nodes)
-    node.setInput(0, tail)
-    _set(node, 'startcode', plan['startcode'])
-    _set(node, 'metafps', False)
-    _set(node, 'fps', plan['fps'])
-    _set(node, 'useFrame', True)
-    _set(node, 'frame', int(out_first))
+    fmt = edit.format()
+    size = max(10, int(round(fmt.height() * 0.03)))
+    margin = max(4, int(round(fmt.height() * 0.02)))
+    node = _qc_text_node(tail, output_timecode_message(plan, int(out_first)),
+                         (margin, margin, fmt.width() - margin, margin + size * 2), True, False, size,
+                         (1, 1, 1), _qc_fonts()[0], _node_name('timecode_' + plate.name()), owned_nodes)
     _set(node, 'label', output_timecode_label(plan, int(out_first)))
     node.setXYpos(tail.xpos(), tail.ypos() + 60)
     created.append(node)
@@ -12210,10 +12283,10 @@ def report_text(res, edit, plate, edit_first, plate_first, out_first):
     o = res['optical']
     ew = edit.format().width()
     L = []
-    L.append('No More Manual Retime v%s  [%s]' % (JM_AR_DISPLAY_VERSION, plate.name()))
+    L.append('No More Manual Retime v%s  [%s]' % (NMMR_DISPLAY_VERSION, plate.name()))
     L.append('EDIT  %s  %d-%d (%d f)' % (edit.name(), edit_first, edit_first + E - 1, E))
     L.append('OUT   %d-%d' % (out_first, out_first + E - 1))
-    L.append(_t('첫 프레임: EDIT %d -> PLATE %d', 'First frame: EDIT %d -> PLATE %d') % (edit_first, plate_first + int(path[0])))
+    L.append(_t('첫 프레임: EDIT %df → PLATE %df', 'First frame: EDIT %df → PLATE %df') % (edit_first, plate_first + int(path[0])))
     a3_line = _a3_retry_text(res)
     if a3_line:
         L.append(a3_line)
@@ -12317,7 +12390,7 @@ def report_text(res, edit, plate, edit_first, plate_first, out_first):
         L.append(_t('확인 필요(매칭 품질 낮음): %s', 'Review required (low matching quality): %s') % _ranges(out_first + np.array(res['lowq'])))
     if res['ambiguous'] and not res.get('near_hold'):  # if there is a still segment, that line counts the same thing
         L.append(_t('정지/반복 구간 모호 프레임: %d', 'Ambiguous static/repeating frames: %d') % res['ambiguous'])
-    L.append(matching_similarity_advisory())
+    L.append(frame_accuracy_text(res))
     # Authored copy is localized at generation. Node/source names are user data
     # a blanket Hangul fallback here would erase those identifiers in EN mode.
     return '\n'.join(L)
@@ -12412,7 +12485,8 @@ def report_display_html(txt):
     for index, line in enumerate(lines):
         if index == 0 or line.startswith(('EDIT  ', 'OUT   ', '첫 프레임:', 'First frame:')):
             headers.append(line)
-        elif line.startswith(('매칭 일치도:', 'Matching similarity:')):
+        elif line.startswith(('매칭 일치도:', 'Matching similarity:', 'TC 대조 일치', 'TC check matched',
+                              '프레임 정확도:', 'Frame accuracy:')):
             scores.append(line)
         elif warning(line):
             warnings.append(line)
@@ -12439,8 +12513,7 @@ def report_display_html(txt):
         add(headers[1:], 4)
     add(scores, 4, bold=True)
     if scores:
-        add([_t('이미지 유사도 지표 · 정답 프레임 정확도가 아님',
-                'Image similarity metric · not measured frame accuracy')], 2, color='#9aa7b5')
+        add([_t('이미지 유사도 지표', 'Image similarity metric')], 2, color='#9aa7b5')
     add(warnings, 4, bold=True)
     add(tc_lines, 3)
     add(details, 2, color='#9aa7b5')
@@ -12450,7 +12523,7 @@ def report_display_html(txt):
 def result_summary_display_html(edit_name, coverage=''):
     """Readable, escaped and localized compact summary for the result graph."""
     lines = [
-        'No More Manual Retime v%s' % JM_AR_DISPLAY_VERSION,
+        'No More Manual Retime v%s' % NMMR_DISPLAY_VERSION,
         'EDIT %s' % edit_name,
     ]
     if coverage:
@@ -12552,7 +12625,7 @@ def result_note_lines(res, edit_name, plate_name, edit_first, plate_first, out_f
     out_last = out_first + n - 1
     lines = [('title', 'NMMR · %s' % plate_name),
              ('meta', 'EDIT %s · %d-%d (%d f) · build %s · %s' % (
-                 edit_name, edit_first, edit_first + n - 1, n, JM_AR_VERSION, _note_seconds(total_seconds)))]
+                 edit_name, edit_first, edit_first + n - 1, n, NMMR_VERSION, _note_seconds(total_seconds)))]
 
     warns = []
     infos = []  # info lines - not counted in the needs-checking decision (still TC/pin confirmed, weak evidence, good coverage)
@@ -12612,12 +12685,13 @@ def result_note_lines(res, edit_name, plate_name, edit_first, plate_first, out_f
     lines.append(status)
     lines.extend(('warn', w) for w in warns)
     lines.extend(('info', w) for w in infos)
-    lines.append(('map', 'EDIT %d → PLATE %d · OUT %d-%d' % (
+    lines.append(('map', 'EDIT %df → PLATE %df · OUT %d-%d' % (
         edit_first, plate_first + int(path[0]), out_first, out_last)))
     lines.append(('tc', _note_tc_line(res)))
+    lines.append(('tc', frame_accuracy_text(res)))
     lines.append(('look', _note_look_line(res, look_requested)))
-    lines.append(('disclaimer', _t('자동 판정입니다. 일치도는 프레임 정확도가 아니니 곡선과 QC로 직접 확인하세요.',
-                                   'Automatic check only. Match score is not frame accuracy; review the curve and QC yourself.')))
+    lines.append(('disclaimer', _t('자동 판정입니다. 곡선과 QC로 직접 확인하세요.',
+                                   'Automatic check only. Review the curve and QC yourself.')))
     return lines
 
 
@@ -12908,7 +12982,7 @@ def ask_settings():
     QtWidgets, QtCore = qt
 
     dlg = QtWidgets.QDialog(QtWidgets.QApplication.activeWindow())
-    dlg.setWindowTitle('No More Manual Retime  v%s' % JM_AR_DISPLAY_VERSION)
+    dlg.setWindowTitle('No More Manual Retime  v%s' % NMMR_DISPLAY_VERSION)
     dlg.setMinimumWidth(640)
     lay = QtWidgets.QVBoxLayout(dlg)
 
@@ -13132,16 +13206,15 @@ def _ask_settings_panel(nodes, d_edit, d_plates):
 
 
 # lagging TC (Nuke side) - calibration file / edit reading / plate TC
-def tc_cfg_path(proj, legacy=False):
+def tc_cfg_path(proj):
     """"""
     return os.path.join(os.path.expanduser('~'), '.nuke',
-                        'JM_auto_retime_tc' if legacy else 'no_more_manual_retime_tc',
+                        'no_more_manual_retime_tc',
                         '%s.json' % (proj or 'default')).replace('\\', '/')
 
 
 def _tc_cfg_read_path(proj):
-    path = tc_cfg_path(proj)
-    return path if os.path.exists(path) else tc_cfg_path(proj, legacy=True)
+    return tc_cfg_path(proj)
 
 
 def load_tc_cfg(proj):
@@ -13340,7 +13413,7 @@ def save_tc_ocr_cache(key, rows, summ, log=print):
 
 def read_edit_tc(edit, ef, el, cfg, fps, log=print):
     """ per-frame burn-in lagging TC of the edit -> list of frame counts (None if reading failed)
-    jm_tc_ocr engine (tc_decode_rows). Returns (out, strs, disp, rows, summary)
+    nmmr_tc_ocr engine (tc_decode_rows). Returns (out, strs, disp, rows, summary)
             rows[t] = (frame count | None, margin, flags), summary is tco_decode_sequence + raw
             cfg['roi_rec'] (record TC region) is no longer used - ignored without a warning even if left in an old calibration file
     with the same media, range, ROI, calibration and OCR version, the saved read result is reused (ROI render + reading skipped, disp is None)"""
@@ -15482,11 +15555,12 @@ def batch_apply_selected_edits(row, plate, edits, path_pairing):
 
 
 _H264_CODEC_NAMES = frozenset(('h264', 'h.264', 'avc', 'avc1', 'x264'))
+_PRORES_CODEC_NAMES = frozenset(('prores', 'apco', 'apcs', 'apcn', 'apch', 'ap4h', 'ap4x'))
 _UNKNOWN_TRANSFER_VALUES = frozenset(('', 'none', 'unknown', 'unspecified'))
 
 
 def edit_needs_rec709_analysis(edit, frame=None):
-    """True only for an untagged H.264 movie whose colorspace was left at the host default.
+    """True only for an untagged H.264 or ProRes movie whose colorspace was left at the host default.
 
     Nuke decodes these as default (Gamma2.2), while create_edit_read uses rec709.
     An explicit colorspace, raw mode, a tagged source or any other codec returns False.
@@ -15499,7 +15573,7 @@ def edit_needs_rec709_analysis(edit, frame=None):
         frame = edit.firstFrame() if frame is None else frame
         codec = {str(edit.metadata(key, frame) or '').strip().lower()
                  for key in ('quicktime/codec_name', 'quicktime/codec_id')}
-        if not codec & _H264_CODEC_NAMES:
+        if not codec & (_H264_CODEC_NAMES | _PRORES_CODEC_NAMES):
             return False
         transfer = str(edit.metadata('quicktime/nclc_transfer_function', frame) or '').strip().lower()
         return transfer in _UNKNOWN_TRANSFER_VALUES
@@ -15576,7 +15650,7 @@ def process_job(edit, plates, opts, ctx, exclude_frames=(), pin_frames=None, edi
         # General failures keep useful partial output, but expose only nodes this job explicitly created.
         # Callers may group them red without sweeping callback/user nodes from the whole graph.
         try:
-            error.jm_ar_owned_nodes = tuple(owned_nodes)
+            error.nmmr_owned_nodes = tuple(owned_nodes)
         except Exception:
             pass
         raise
@@ -15778,7 +15852,7 @@ def _process_job_impl(edit, plates, opts, ctx, exclude_frames, pin_frames, edit_
         look_elapsed = time.time() - t_look
         if qc_grade_node is not None:
             owned_nodes.append(qc_grade_node)
-        try:  # AddTimeCode (EDIT TC) at the end of the output tree
+        try:  # timecode Text overlay at the end of the output tree
             add_output_timecode(created, output_tree_tail(created, qc_grade_node), edit, plate, ef, lo, res,
                                 out_first, owned_nodes, log)
         except Exception as error:
@@ -16054,7 +16128,7 @@ def run_batch(rows, opts, ctx, on_row=None, review_out=None):
             row['tc'] = st[0] if st else ''
             r0 = out['results'][0]['res']
             row['quality'] = r0.get('quality')
-            flag = ['일치도 ' + score_text(row['quality'])]
+            flag = ['일치도 ' + score_text(row['quality']), frame_accuracy_text(r0, korean=True)]
             if r0.get('confidence_warn'):
                 flag.append('신뢰도 낮음(%s)' % ', '.join(r0['confidence_warn']))
             if r0.get('lowq'):
@@ -16480,7 +16554,7 @@ def build_review(entries, opts, ctx, owned_nodes=None):
     big = max(entries, key=lambda e: e['edit'].format().width())
     Wf, Hf = qc_review_dimensions(big['edit'].format().width(),
                                  big['edit'].format().height(), opts.get('review_res', 'fhd'))
-    fmt_name = 'JM_AR_QC_%dx%d' % (Wf, Hf)
+    fmt_name = 'NMMR_QC_%dx%d' % (Wf, Hf)
     fmt = next((f for f in nuke.formats() if f.name() == fmt_name), None)
     if fmt is None:
         fmt = nuke.addFormat('%d %d 0 0 %d %d 1 %s' % (Wf, Hf, Wf, Hf, fmt_name))
@@ -16750,7 +16824,7 @@ def create_review_read(path, frames, colorspace, anchors, log=print):
         rd['last'].setValue(int(frames))
         _set(rd, 'origfirst', 1)
         _set(rd, 'origlast', int(frames))
-        if colorspace:
+        if colorspace and not _is_default_colorspace(colorspace):
             _set(rd, 'colorspace', colorspace)
         rd['label'].setValue(qc_read_label(frames))
         rd.setSelected(False)
@@ -16791,7 +16865,7 @@ def make_review(entries, opts, ctx, anchors=None):
 
     def group_failed(reason):
         wrapped = RuntimeError(reason)
-        wrapped.jm_ar_owned_nodes = tuple(review_nodes)
+        wrapped.nmmr_owned_nodes = tuple(review_nodes)
         return finalize_failed_owned(wrapped, group_label(), ctx.log,
                                      head='QC Review · %d shots' % len(entries))
 
@@ -17048,7 +17122,7 @@ def _np_to_qimage(QtGui, img, gamma=True):
 
 def _refresh_segmented_geometry(box):
     """Keep translated segment labels visible without shrinking their font."""
-    buttons = tuple(getattr(box, '_jm_ar_segment_buttons', ()) or ())
+    buttons = tuple(getattr(box, '_nmmr_segment_buttons', ()) or ())
     if not buttons:
         return
     widths = []
@@ -17234,18 +17308,18 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
         return reverse.get(text, text)
 
     def _localized_property(widget, name, current):
-        cache = getattr(widget, '_jm_ar_i18n_properties', {})
+        cache = getattr(widget, '_nmmr_i18n_properties', {})
         record = cache.get(name)
         if record is None or str(current) != record[1]:
             record = (str(current or ''), None)
         source = record[0]
         rendered = source if ui_language() == 'ko' else _english_authored_text(source)
         cache[name] = (source, rendered)
-        widget._jm_ar_i18n_properties = cache
+        widget._nmmr_i18n_properties = cache
         return rendered
 
     def _localize_tree(root):
-        """Retranslate one JM window without touching editable text or Qt globals."""
+        """Retranslate one window without touching editable text or Qt globals."""
         widgets = [root] + list(root.findChildren(QtWidgets.QWidget))
         for widget in widgets:
             if isinstance(widget, (QtWidgets.QAbstractButton, QtWidgets.QLabel)):
@@ -17278,7 +17352,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             if action.toolTip():
                 action.setToolTip(_authored_text(action.toolTip()))
         for widget in widgets:
-            if getattr(widget, '_jm_ar_segment_buttons', None):
+            if getattr(widget, '_nmmr_segment_buttons', None):
                 _refresh_segmented_geometry(widget)
         root.setWindowTitle(_authored_text(root.windowTitle()))
 
@@ -17617,7 +17691,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             out.append(b)
         out[0].setChecked(True)
         box._grp = grp
-        box._jm_ar_segment_buttons = tuple(out)
+        box._nmmr_segment_buttons = tuple(out)
         _refresh_segmented_geometry(box)
         return box, out
 
@@ -17866,7 +17940,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
 
     # Lagging-TC calibration dialog
     class TcCalibDialog(QtWidgets.QDialog):
-        """ ROI box specification + test (jm_tc_ocr). No glyph label input - built-in font dictionary + per-clip self-calibration.
+        """ ROI box specification + test (nmmr_tc_ocr). No glyph label input - built-in font dictionary + per-clip self-calibration.
         Only when reading is low for a font seen for the first time, type the TC of one or two frames directly (tco_exemplars_from_typed -> cfg['ocr2'])
         step guide 1 draw region -> 2 test -> 3 save (tc_calib_state), automatic cleanup of typed input + inline validation,
         'value the tool read' display, record TC region removed"""
@@ -18227,7 +18301,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             if roi is None:
                 return
             cfg = self._cfg_now(roi)
-            cfg.update(source=self.edit['file'].value(), engine='jm_tc_ocr %s' % TCO_VERSION,
+            cfg.update(source=self.edit['file'].value(), engine='nmmr_tc_ocr %s' % TCO_VERSION,
                        saved=__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M'))
             cfg.pop('last_test', None)
             if self.tested:
@@ -19173,7 +19247,6 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
     # path settings window
     class PathsDialog(QtWidgets.QDialog):
         """Path template settings. Saved to a new personal file. Empty field = shared (NMMR_PATHS) value or the default.
-        The old JM_AR_PATHS and personal files are read for compatibility and not modified.
         Enter = save (line break in multi-line fields), Esc = close, modal (Tab stays inside this window)"""
         # (key path, label, kind, description) - kind: lines = one template per line / list = comma list / int / text / choice:value,value
         FIELDS = (
@@ -20024,12 +20097,12 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                 pass
             return False
 
-    class AutoRetimeWindow(QtWidgets.QWidget):
+    class NMMRWindow(QtWidgets.QWidget):
         def __init__(self, parent=None):
             QtWidgets.QWidget.__init__(self, parent, Qt.Tool)
             self.setObjectName('arWin')
             self.setAttribute(Qt.WA_StyledBackground, True)
-            self.setWindowTitle('No More Manual Retime  v%s' % JM_AR_DISPLAY_VERSION)
+            self.setWindowTitle('No More Manual Retime  v%s' % NMMR_DISPLAY_VERSION)
             self.setStyleSheet(css)
             self.setMinimumWidth(600)  # 720 -> 600 (when narrower, labels are abbreviated / icon only)
             self._cancel = False
@@ -20054,6 +20127,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             self.lb_ctx = QtWidgets.QLabel('')
             self.lb_ctx.setObjectName('chip')
             self.lb_ctx.setTextFormat(Qt.RichText)
+            self.lb_ctx.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
             hr.addWidget(self.lb_ctx, 0)
             hr.addStretch(1)
             self.cb_language = QtWidgets.QComboBox()
@@ -20069,21 +20143,15 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             self.b_top.setAccessibleName('항상 위')
             self.b_top.toggled.connect(lambda on: self._apply_top(on))
             hr.addWidget(self.b_top)
-            self.b_tips = _tool('tips', '툴팁', '', None)  # tooltips on / off
-            self.b_tips.setCheckable(True)
-            self.b_tips.setAccessibleName('툴팁')
-            self.b_tips.toggled.connect(lambda on: self._apply_tips(on))
-            hr.addWidget(self.b_tips)
             self._tip_gate = TipGate(self)
-            self._tip_gate.keep = (self.b_tips,)
             QtWidgets.QApplication.instance().installEventFilter(self._tip_gate)
             self.b_selection = _tool(
-                'node', '선택 노드 불러오기',
-                '노드그래프에서 선택한 Read 를 EDIT / PLATE 로 불러옵니다\n'
+                'node', '선택한 Read로 설정',
+                '노드그래프에서 지금 선택한 Read 를 이 창의 EDIT / PLATE 입력으로 지정합니다. 창을 연 뒤 선택을 바꿨을 때 누릅니다.\n'
                 '· MP 1개 → 그 샷 기준 (경로 설정이 있으면 최신 편집본 자동)\n· MP + 편집본 mov → 둘 다 그대로\n'
                 '· MP 여러 개, 같은 샷 → 분할합성\n· MP 여러 개, 다른 샷 → 배치 탭',
                 lambda: self.apply_selection())
-            self.b_selection.setAccessibleName('선택 노드 불러오기')
+            self.b_selection.setAccessibleName('선택한 Read로 설정')
             hr.addWidget(self.b_selection)
             self.b_paths = _tool('gear', '경로 설정', '경로 설정 (⌘, / Ctrl+,)\n'
                                  '샷 문맥 · 플레이트 · 편집본 폴더 구조를 경로 템플릿으로 지정합니다.\n'
@@ -20101,6 +20169,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             self._build_single()
             self._build_batch()
             self._build_common(root)
+            self._tip_gate.keep = (self.b_tips,)
             self.refresh_sources()
             self._update_ctx_label()
             self.apply_selection(initial=True)  # selected nodes take priority
@@ -20130,6 +20199,9 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             self._apply_top(self.b_top.isChecked(), save=False)
             _localize_tree(self)
             self._refresh_status_language(stat_before)
+            self.lb_stat._suffix = self._stat_tip_suffix()
+            self.lb_stat.setText(self.lb_stat.text())
+            self._set_state(getattr(self, '_state_kind', 'idle'))
             self.cb_language.setToolTip(_t('언어 / Language', 'Language'))
             for item_index, (key, label) in enumerate(OUT_NODES):
                 ok, why = retime_node_available(key)
@@ -20163,6 +20235,9 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             self.lst_plate.viewport().update()
             self.timeline.update()
 
+        def _stat_tip_suffix(self):
+            return _t('\n\n전체 기록은 [로그] 를 펼쳐 확인할 수 있습니다', '\n\nOpen [Log] to see the full record.')
+
         def _refresh_status_language(self, before):
             """Footer status holds interpolated text that _localize_tree cannot translate: rebuild a known message, else clear it."""
             redo = getattr(self, '_stat_redo', None)
@@ -20173,13 +20248,11 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                 self.lb_stat.setText('')
 
         def _apply_tips(self, on, save=True):
-            """ tooltip toggle - on: filled speech bubble, accent color, 'Tooltips' / off: slashed speech bubble, gray, 'Tooltips off'"""
+            """ tooltip toggle in the advanced options; the checkbox state carries on / off"""
             on = bool(on)
             self._tip_gate.on = on
-            self.b_tips.setIcon(_icon('tips' if on else 'tips_off', _UI['accent_hi'] if on else '#8a8a8a'))
-            self.b_tips.setText(_t('툴팁', 'Tooltips') if on else _t('툴팁 끔', 'Tooltips off'))
             self.b_tips.setToolTip(_t(
-                '툴팁: %s\n누르면 %s', 'Tooltips: %s\nClick to %s') % (
+                '툴팁: %s\n체크를 바꾸면 %s', 'Tooltips: %s\nToggle to %s') % (
                 (_t('켜짐 — 버튼 · 칩 · 타임라인에 마우스를 올리면 설명이 뜹니다',
                     'On — hover buttons, chips, and the timeline for help'),
                  _t('끕니다 (이 버튼 설명만 계속 뜸)', 'turn off (this tooltip remains)')) if on else
@@ -20703,7 +20776,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
 
             ar_ = QtWidgets.QHBoxLayout()
             ar_.setSpacing(6)
-            self.b_adv = _tool('chev_r', '고급 옵션', '감지 / 생성 옵션', None, '#9a9a9a', 'ghost')
+            self.b_adv = _tool('chev_r', '고급 옵션', '감지 / 생성 옵션 · 툴팁 표시', None, '#9a9a9a', 'ghost')
             self.b_adv.setCheckable(True)
             self.lb_adv = QtWidgets.QLabel('')
             self.lb_adv.setObjectName('dim')
@@ -20726,6 +20799,9 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                     c.toggled.connect(lambda value, key=key: _ui_set(key, bool(value)))
                 self.checks[key] = c
                 al.addWidget(c, i // 2, i % 2)
+            self.b_tips = QtWidgets.QCheckBox('툴팁 표시')  # tooltips on / off; its own detail stays available
+            self.b_tips.setAccessibleName('툴팁 표시')
+            self.b_tips.toggled.connect(lambda on: self._apply_tips(on))
             speed_row = QtWidgets.QHBoxLayout()
             speed_row.setSpacing(8)
             lb_speed = QtWidgets.QLabel('최대 배속')
@@ -20808,12 +20884,12 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             self.ed_temp_path = QtWidgets.QLineEdit()
             self.ed_temp_path.setText(str(_ui_get('temp_path', '') or ''))
             self.ed_temp_path.setPlaceholderText(_t('기본: %s', 'Default: %s') % temp_storage_base(''))
-            temp_tip = _t('분석 썸네일과 QC 임시 샘플을 선택한 폴더 아래 JM_auto_retime/에만 만듭니다.\n'
+            temp_tip = _t('분석 썸네일과 QC 임시 샘플을 선택한 폴더 아래 no_more_manual_retime/에만 만듭니다.\n'
                         '원본과 서버 미디어는 읽기만 하며 수정·이름 변경·삭제하지 않습니다. 실행 중에는 이 경로가 고정됩니다.\n'
                         '작업 종료 때 사용한 캐시를 정리하고, 남은 파일은 [열기]로 확인해 작업이 없을 때 직접 지울 수 있습니다.\n'
                         '분할합성 ROI 마스크는 아래에 표시된 영구 폴더에 따로 보존되며 임시 캐시 정리에서 제외됩니다.\n'
                         '저장된 .nk 옆의 명시적 QC 리뷰도 임시 캐시가 아니며 이 설정으로 옮기지 않습니다.',
-                        'Analysis thumbnails and temporary QC samples are created only under JM_auto_retime/ in the chosen folder.\n'
+                        'Analysis thumbnails and temporary QC samples are created only under no_more_manual_retime/ in the chosen folder.\n'
                         'Source and server media are read only: never modified, renamed or deleted. This path stays fixed during a run.\n'
                         'Used caches are cleaned after processing. Open the folder to remove leftovers manually while no job is running.\n'
                         'Split-composite ROI masks are kept in the separate persistent folder below and excluded from temporary cleanup.\n'
@@ -20828,7 +20904,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             b_temp_reset.setToolTip('운영체제의 기본 임시 폴더로 되돌립니다')
             b_temp_reset.clicked.connect(self._reset_temp_dir)
             b_temp_open = QtWidgets.QPushButton('열기')
-            b_temp_open.setToolTip('현재 JM_auto_retime 임시 폴더를 Finder/탐색기에서 엽니다. 작업 중인 파일은 지우지 마세요')
+            b_temp_open.setToolTip('현재 no_more_manual_retime 임시 폴더를 Finder/탐색기에서 엽니다. 작업 중인 파일은 지우지 마세요')
             b_temp_open.clicked.connect(self._reveal_temp_dir)
             self._temp_controls = (self.ed_temp_path, b_temp_pick, b_temp_reset, b_temp_open)
             temp_row.addWidget(lb_temp)
@@ -20873,6 +20949,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             al.addLayout(cache_row, adv_row + 6, 0, 1, 2)
             self._update_tc_cache_label()
             self._update_temp_path_label()
+            al.addWidget(self.b_tips, al.rowCount(), 0, 1, 2)
             self.adv.setVisible(False)
             root.addWidget(self.adv)
             self.b_adv.toggled.connect(self._toggle_adv)
@@ -21011,7 +21088,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             br.setSpacing(8)
             self.dot = QtWidgets.QLabel()
             self.dot.setFixedSize(8, 8)
-            self.lb_stat = ElideLabel('대기', tip_suffix='\n\n전체 기록은 [로그] 를 펼쳐 확인할 수 있습니다')
+            self.lb_stat = ElideLabel('대기', tip_suffix=self._stat_tip_suffix())
             self.lb_pct = QtWidgets.QLabel('')
             self.lb_pct.setObjectName('dim')
             self.lb_pct.setFont(_font(11, mono=True))
@@ -21275,6 +21352,8 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
 
         # timeline
         def load_strip(self):
+            if self._busy:
+                return
             with UndoGroup('No More Manual Retime: Read'):
                 edit = self._edit_node()
             if edit is None:
@@ -21286,10 +21365,36 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             self.lb_stat.setText(_t('타임라인 미리보기 렌더 중입니다…', 'Rendering timeline preview…'))
             self._set_state('busy')
             QtWidgets.QApplication.processEvents()
-            ensure_preview(edit, ef, el, self.log)
-            imgs, ok = load_preview(edit, list(range(ef, el + 1)), self.log)
-            self._prev = [QtGui.QPixmap.fromImage(_np_to_qimage_rgb(QtGui, im)) for im in imgs]
-            small = [pm.scaledToHeight(TimelineWidget.BAND, Qt.SmoothTransformation) for pm in self._prev]
+            self._busy, self._cancel = True, False
+            self._busy_ui(True)
+            self.bar.setValue(0)
+            quiet = quiet_host_progress()
+            self._quiet = quiet
+            set_render_watch(self._render_watch(0.9))
+            try:
+                with quiet:
+                    ensure_preview(edit, ef, el, self.log)
+                    imgs, ok = load_preview(edit, list(range(ef, el + 1)), self.log)
+                    self._prev = []
+                    for index, im in enumerate(imgs):
+                        _watch_tick(index, len(imgs), 'load')
+                        self._prev.append(QtGui.QPixmap.fromImage(_np_to_qimage_rgb(QtGui, im)))
+                small = [pm.scaledToHeight(TimelineWidget.BAND, Qt.SmoothTransformation) for pm in self._prev]
+            except Exception as error:
+                if not (self._cancel or isinstance(error, Cancelled)):
+                    self._set_state('err')
+                    raise
+                self._prev = getattr(self, '_prev', None) or []
+                self.lb_stat.setText(_t('타임라인 불러오기 취소', 'Timeline load cancelled'))
+                self._set_state('warn')
+                return
+            finally:
+                set_render_watch(None)
+                self._quiet = None
+                self._busy = False
+                self._busy_ui(False)
+                self.bar.setValue(0)
+                self.lb_pct.setText('')
             self.timeline.set_data(ef, el, small)
             self.timeline.fps = node_fps(edit, ef)
             self.grip.setVisible(True)
@@ -21789,6 +21894,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             self.lb_ctx.setText('<span style="color:%s">●</span>&nbsp; <b>%s</b>'
                                 '&nbsp;&nbsp;<span style="color:%s">%s</span>' % (
                                     dot, escape(txt), _UI['dim'], escape(detail)))
+            self._ctx_chip = (dot, txt, detail)
             if not active:
                 tip = _t('플레이트와 편집본 Read를 직접 선택해 실행할 수 있습니다.\n'
                          '폴더에서 입력을 자동으로 찾으려면 선택 기능인 [경로 설정]을 사용하세요.\n'
@@ -21808,11 +21914,11 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             else:
                 tip = _t('기준: %s\n현재 경로가 자동 감지 템플릿과 맞지 않습니다.\n'
                          '플레이트와 편집본 Read를 직접 선택하면 계속 실행할 수 있습니다.\n'
-                         '자동 감지가 필요하면 [경로 설정]에서 템플릿을 확인하거나 [선택 노드 불러오기]를 사용하세요.\n'
+                         '자동 감지가 필요하면 [경로 설정]에서 템플릿을 확인하거나 [선택한 Read로 설정]를 사용하세요.\n'
                          '이 표시는 경로 자동 감지 상태이며 리타임 분석 결과가 아닙니다.',
                          'Context: %s\nThe current path does not match a discovery template.\n'
                          'Select plate and edit Reads manually to continue.\n'
-                         'For automatic discovery, check Path setup or use Load selected nodes.\n'
+                         'For automatic discovery, check Path setup or use Use selected Reads.\n'
                          'This is a path-discovery status, not a retime analysis result.') % src
             self.lb_ctx.setToolTip(tip)
 
@@ -22088,6 +22194,8 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             quiet = quiet_host_progress()  # the precheck also gets the same progress window treatment as a run ( [3])
             quiet.__enter__()
             self._quiet = quiet
+            set_render_watch(self._render_watch(0.25))
+            self.bar.setValue(0)
             analysis_edit, temp_read = acquire_analysis_read(edit, self.log)
             try:
                 ensure_thumbs(analysis_edit, ef, el, 1, W_EDIT, True, self.log)
@@ -22141,6 +22249,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                     traceback.print_exc()
                     self.lb_stat.setText(_t('TC 사전검사 실패: %s', 'TC preflight failed: %s') % error)
             finally:
+                set_render_watch(None)
                 release_analysis_read(temp_read, self.log)
                 self._quiet = None
                 quiet.__exit__(None, None, None)
@@ -22233,7 +22342,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                     return str(helper())
                 except TypeError:
                     return str(helper(None))
-            return os.path.join(os.path.expanduser('~'), '.nuke', 'JM_auto_retime', 'roi_masks')
+            return os.path.join(os.path.expanduser('~'), '.nuke', 'no_more_manual_retime', 'roi_masks')
 
         def _temp_path_changed(self):
             value = self._temp_path_value()
@@ -22386,6 +22495,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
 
         def _set_state(self, kind):
             """ status dot: idle gray / busy blue / ok green / warn yellow / err red (color + text together)"""
+            self._state_kind = kind
             col = dict(idle='#6a6a6a', busy=_UI['accent'], ok=_UI['ok'], warn=_UI['warn'], err=_UI['err']).get(kind)
             self.dot.setStyleSheet('background-color: %s; border-radius: 4px;' % col)
             self.dot.setToolTip(_t(
@@ -22529,7 +22639,8 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                 self._tc_hint = ''
                 self.lb_tc_next.setText('')
             self.logw.clear()
-            self.log('run v%s' % JM_AR_DISPLAY_VERSION)
+            self.log('run v%s' % NMMR_DISPLAY_VERSION)
+            set_render_watch(self._render_watch(0.1))
             quiet = quiet_host_progress()  # so the Nuke progress window does not steal focus while another app is in use
             self._quiet = quiet  # [Cancel] -> also stops the nuke.execute in progress
             try:
@@ -22544,6 +22655,7 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                 self._outcome = 'err'
                 raise
             finally:
+                set_render_watch(None)
                 self._quiet = None
                 self._busy = False
                 self._busy_ui(False)
@@ -22553,14 +22665,35 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                 counts = getattr(self, '_run_counts', None)
                 if run_has_result(self._outcome, counts, self._cancel):
                     ok_n, total_n = counts if counts else (None, None)
-                    head = run_done_headline(self._outcome, ok_n, total_n,
-                                             __import__('time').time() - self._run_t0, self._cancel)
-                    self._show_done(run_done_status_text(head, self.lb_stat.text()))
+                    done_args = (self._outcome, ok_n, total_n,
+                                 __import__('time').time() - self._run_t0, self._cancel)
+                    self._show_done(run_done_status_text(run_done_headline(*done_args), self.lb_stat.text()))
+                    self._stat_redo = (lambda args=done_args: run_done_headline(*args), self.lb_stat.text())
                 if self.tabs.currentIndex() == 0 and self.timeline.cur is not None:
                     self.timeline.setFocus()  # Space = play after a run as well (focus slipped from the [Run] that had been disabled)
 
         def _ctx(self, ask):
             return JobCtx(self.log, self._progress, lambda: self._cancel, ask)
+
+        def _render_watch(self, span):
+            """Frame-render progress: moves the bar over `span` from where it stands and answers Cancel between chunks."""
+            names = {'thumbs': ('썸네일 렌더', 'Rendering thumbnails'), 'preview': ('타임라인 미리보기 렌더', 'Rendering timeline preview'),
+                     'TC roi': ('TC 영역 렌더', 'Rendering TC region'), 'load': ('썸네일 읽기', 'Reading thumbnails'),
+                     'analysis': ('분절컷 검사', 'Checking for cuts')}
+            base = [self.bar.value() / 1000.0]
+
+            def watch(done, total, tag):
+                if self._cancel:
+                    raise Cancelled(_t('사용자 취소', 'Cancelled by user'))
+                if not done:
+                    base[0] = self.bar.value() / 1000.0
+                name = names.get(tag, names['thumbs'])
+                held = base[0] if tag == 'analysis' else base[0] + span * done / float(max(total, 1))
+                self._progress(min(1.0, held),
+                               _t('%s %d/%d프레임', '%s %d/%d frames') % (_t(name[0], name[1]), done, total))
+                if self._cancel:
+                    raise Cancelled(_t('사용자 취소', 'Cancelled by user'))
+            return watch
 
         def _run_single(self):
             ex, pins = self._sets()
@@ -22900,12 +23033,43 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
             # Reserve the window margins, a useful slice of the context badge
             # language/top/tips controls, and every header gap. The two actions
             # retain their complete text and tooltips while rendered icon-only.
-            fixed = 24 + 120 + sum(widget.sizeHint().width() for widget in
-                                   (self.cb_language, self.b_top, self.b_tips))
-            fixed += max(0, self._header_layout.spacing()) * 5
+            chip = getattr(self, '_ctx_chip', None) or ('', '', '')
+            name_w = self._set_ctx_chip(chip[0], chip[1], '')
+            fixed = 24 + sum(widget.sizeHint().width() for widget in (self.cb_language, self.b_top))
+            fixed += max(0, self._header_layout.spacing()) * 4
+            # Priority+: labels of the header actions collapse before the shot name is cut.
             self._header_tools_compact = _refresh_header_tool_geometry(
-                (self.b_selection, self.b_paths), self.width(), fixed,
+                (self.b_selection, self.b_paths), self.width(), fixed + min(name_w, 320),
                 Qt.ToolButtonTextBesideIcon, Qt.ToolButtonIconOnly)
+            used = fixed + sum(widget.sizeHint().width() for widget in (self.b_selection, self.b_paths))
+            self._fit_ctx_chip(max(80, self.width() - used), chip)
+
+        def _set_ctx_chip(self, dot, name, note):
+            """Show the chip text; returns the width it needs, measured by the label itself (padding included)."""
+            from html import escape
+            tail = '&nbsp;&nbsp;<span style="color:%s">%s</span>' % (_UI['dim'], escape(note)) if note else ''
+            html = '<span style="color:%s">●</span>&nbsp; <b>%s</b>%s' % (dot, escape(name), tail)
+            self.lb_ctx.setText(html)
+            doc = QtGui.QTextDocument()
+            doc.setDefaultFont(self.lb_ctx.font())
+            doc.setDocumentMargin(0)
+            doc.setHtml(html)
+            padding = max(0, self.lb_ctx.width() - self.lb_ctx.contentsRect().width())
+            return int(doc.idealWidth() + 0.999) + max(padding, 16) + 2
+
+        def _fit_ctx_chip(self, avail, chip):
+            """One line always: drop the source note first, then elide the name. The full text stays in the hover detail."""
+            dot, txt, detail = chip
+            width = self._set_ctx_chip(dot, txt, detail)
+            if width > avail:
+                width = self._set_ctx_chip(dot, txt, '')
+            if width > avail:
+                bare = self._set_ctx_chip(dot, '', '')
+                font = QtGui.QFont(self.lb_ctx.font())
+                font.setBold(True)
+                name = QtGui.QFontMetrics(font).elidedText(txt, Qt.ElideMiddle, max(20, avail - bare))
+                width = self._set_ctx_chip(dot, name, '')
+            self.lb_ctx.setFixedWidth(int(width))
 
         def resizeEvent(self, ev):
             QtWidgets.QWidget.resizeEvent(self, ev)
@@ -22934,9 +23098,9 @@ def _mk_window_classes(QtWidgets, QtCore, QtGui):
                 pass
             ev.accept()
 
-    AutoRetimeWindow.TcCalibDialog = TcCalibDialog
-    AutoRetimeWindow.PathsDialog = PathsDialog  # path settings window (when opened directly by tests / other entry points)
-    return AutoRetimeWindow
+    NMMRWindow.TcCalibDialog = TcCalibDialog
+    NMMRWindow.PathsDialog = PathsDialog  # path settings window (when opened directly by tests / other entry points)
+    return NMMRWindow
 
 
 def _selected_reads():
@@ -23068,15 +23232,15 @@ def _mk_numpy_dialog(QtWidgets, QtCore):
                 '예: /shared/pylibs/py%d%d  (여러 개는 %s 로 구분)',
                 'Example: /shared/pylibs/py%d%d  (separate multiple paths with %s)') %
                 (self.host['py'][0], self.host['py'][1], os.pathsep))
-            self.ed_shared.setText(_ui_get('numpy_path', '') or os.environ.get('JM_NUMPY_PATH', ''))
+            self.ed_shared.setText(_ui_get('numpy_path', '') or os.environ.get('NMMR_NUMPY_PATH', ''))
             self.btn_shared = QtWidgets.QPushButton(_t('적용', 'Apply'))
             rc.addWidget(self.ed_shared, 1)
             rc.addWidget(self.btn_shared)
             lc.addLayout(rc)
             tip = QtWidgets.QLabel(_t(
-                '항상 쓰려면 환경변수 JM_NUMPY_PATH 를 지정하거나 init.py 에 '
+                '항상 쓰려면 환경변수 NMMR_NUMPY_PATH 를 지정하거나 init.py 에 '
                 "sys.path.append('/shared/pylibs/py%d%d') 를 넣으세요. 여기서 적용하면 다음 실행부터 기억합니다.",
-                'For permanent use, set JM_NUMPY_PATH or add '
+                'For permanent use, set NMMR_NUMPY_PATH or add '
                 "sys.path.append('/shared/pylibs/py%d%d') to init.py. Applying it here remembers the path for future runs.")
                 % (self.host['py'][0], self.host['py'][1]))
             tip.setWordWrap(True)
@@ -23162,7 +23326,7 @@ def _mk_numpy_dialog(QtWidgets, QtCore):
         def _succeed(self, how):
             self._set_busy(False)
             self.log(_t('%s - numpy %s 불러옴 (%s)', '%s - numpy %s loaded (%s)') % (how, np.__version__, os.path.dirname(np.__file__)))
-            self.lb_status.setText(_t('<span style="color:#6cc070">numpy %s 사용 가능.</span> 곧 Auto Retime 창을 엽니다.', '<span style="color:#6cc070">numpy %s ready.</span> Opening No More Manual Retime shortly.') % np.__version__)
+            self.lb_status.setText(_t('<span style="color:#6cc070">numpy %s 사용 가능.</span> 곧 No More Manual Retime 창을 엽니다.', '<span style="color:#6cc070">numpy %s ready.</span> Opening No More Manual Retime shortly.') % np.__version__)
             QtCore.QTimer.singleShot(500, self._finish)
 
         def _finish(self):
@@ -23394,7 +23558,7 @@ def _place_over_dag(win, QtWidgets, QtCore, QtGui):
 
 
 def _ui_path():
-    return os.path.join(os.path.expanduser('~'), '.nuke', 'JM_auto_retime_ui.json').replace('\\', '/')
+    return os.path.join(os.path.expanduser('~'), '.nuke', 'no_more_manual_retime_ui.json').replace('\\', '/')
 
 
 def _ui_get(key, default=None):
@@ -23430,7 +23594,7 @@ def run(batch=False):
     multi-plate loop + coverage summary
     replaced with the integrated GUI window (classic popup flow if Qt is absent)
     """
-    print('[No More Manual Retime] run v%s' % JM_AR_DISPLAY_VERSION)
+    print('[No More Manual Retime] run v%s' % NMMR_DISPLAY_VERSION)
     if nuke is None:
         raise RuntimeError(_t('Nuke 안에서 실행해 주세요', 'Run this tool inside Nuke.'))
     if np is None and not _np_recover():  # if missing, the install dialog (after installing, run the same call again)

@@ -21,7 +21,7 @@ EDL, XML, 일치하는 타임코드가 필요 없습니다. 실제로 받는 오
 
 `no_more_manual_retime.py` 파일 하나만 있으면 됩니다.
 
-- **Releases:** [Releases 페이지](../../releases)의 최신 `no_more_manual_retime_v1.0.0.zip` (도구 파일, README, 라이선스).
+- **Releases:** [Releases 페이지](../../releases)의 최신 `no_more_manual_retime_v1.0.1.zip` (도구 파일, README, 라이선스).
 - **단일 파일:** 이 저장소의 `no_more_manual_retime.py`. **Raw** 보기에서 복사하세요.
 
 ## 설치
@@ -41,11 +41,13 @@ import nuke
 nuke.pluginAddPath("./python")
 import no_more_manual_retime
 
-nuke.menu("Nuke").addCommand("JM/No More Manual Retime", no_more_manual_retime.run)
-nuke.menu("Nuke").addCommand("JM/No More Manual Retime (Batch Selected)", no_more_manual_retime.run_batch_selected)
+nuke.menu('Nuke').addCommand('NMMR/No More Manual Retime', 'no_more_manual_retime.run()', 'ctrl+alt+r')
+nuke.menu('Nuke').addCommand('NMMR/No More Manual Retime (Batch Selected)', 'no_more_manual_retime.run_batch_selected()')
 ```
 
-3. Nuke를 다시 시작하면 메뉴 막대에 **JM > No More Manual Retime**이 나타납니다.
+3. Nuke를 다시 시작하면 메뉴 막대에 **NMMR > No More Manual Retime**이 나타납니다.
+
+`ctrl+alt+r`은 macOS에서 Cmd+Option+R입니다. 이미 쓰는 단축키라면 다른 키로 바꾸세요.
 
 ### numpy
 
@@ -53,7 +55,7 @@ Nuke에는 numpy가 들어 있지 않습니다. 없으면 첫 실행 때 설치 
 
 - **오프라인:** 플랫폼에 맞는 numpy 휠을 스크립트 옆 `vendor/` 폴더에 두거나 창에서 폴더를 지정합니다.
 - **온라인:** **온라인 설치 (pip)** 를 누르면 Nuke 내장 Python으로 `pip install --target`을 실행해 Nuke 설정 밖의 `~/.nuke_pylibs/`에 설치합니다.
-- **공용 폴더:** 환경변수 `JM_NUMPY_PATH`로 모든 워크스테이션이 같은 numpy 폴더를 보게 합니다.
+- **공용 폴더:** 환경변수 `NMMR_NUMPY_PATH`로 모든 워크스테이션이 같은 numpy 폴더를 보게 합니다.
 
 Nuke 16 미만은 Python 3.10, Nuke 16 이상은 Python 3.11을 쓰므로 맞는 휠을 받으세요. 예:
 
@@ -64,13 +66,13 @@ pip download numpy --only-binary=:all: --no-deps -d vendor --python-version 3.11
 ## 사용
 
 1. 편집본과 플레이트를 Read 노드로 스크립트에 불러옵니다.
-2. 둘을 선택한 채(선택 사항) **JM > No More Manual Retime**을 실행합니다.
+2. 둘을 선택한 채(선택 사항) **NMMR > No More Manual Retime**을 실행합니다.
 3. **EDIT**이 편집본, **PLATE**가 원본 소스인지 확인합니다. **First Frame** 기본값은 **Plate start**입니다.
 4. **Run**을 누릅니다.
 
 플레이트 옆에 TimeWarp, FrameRange, 플레이트를 편집본 포맷으로 맞추는 Reformat과 Transform, QC 차이 트리(편집본과 리타임한 플레이트 비교), 리포트 노트가 만들어집니다. 한 번의 실행으로 만든 노드는 한 백드롭 안에 모이며 Ctrl+Z 한 번(macOS는 Cmd+Z)으로 되돌립니다.
 
-플레이트 Read 여러 개를 선택하고 **JM > No More Manual Retime (Batch Selected)** 를 쓰면 차례로 처리합니다.
+플레이트 Read 여러 개를 선택하고 **NMMR > No More Manual Retime (Batch Selected)** 를 쓰면 차례로 처리합니다.
 
 ### 결과 읽기
 
@@ -101,12 +103,13 @@ pip download numpy --only-binary=:all: --no-deps -d vendor --python-version 3.11
 - 보간(Kronos 등)으로 만든 슬로우 모션은 아직 약하고, 줌과 겹치면 더 약합니다.
 - QC 렌더는 톤 차이는 무시하지만 전부는 아닙니다. 편집본에만 있는 번인은 정확한 리타임에서도 희미한 밝은 윤곽을 남깁니다. 크고 구조적인 번쩍임을 기준으로 판단하세요.
 - OCIO·ACES 프로젝트에서는 편집본과 플레이트 Read의 색공간을 직접 지정하세요. 기본값으로 두면 멈추거나 이미지 분석 정확도가 떨어질 수 있습니다. 태그 없는 ProRes 편집본도 색공간을 직접 지정하세요.
+- 타임코드 Text 오버레이가 켜진 채로 렌더하면 플레이트에 박힙니다. 원본 렌더 때는 그 노드를 끄세요.
 - 샷 안에서 프레임을 잘라낸 곳은 따라 뛰지 않고 경고합니다. 2–3프레임 점프는 경고가 나오지 않고, 실제 촬영분에서는 읽을 수 있는 타임코드가 없을 때 4·8프레임 점프도 경고가 나오지 않았습니다.
 - macOS의 Nuke 16.1에서 검증했습니다. Nuke 15.1, Windows, Linux는 실제 Nuke에서 아직 검증하지 않았습니다.
 
 ## 정확도
 
-개발에 쓰지 않은 샷 16개의 편집 조건 144개(모드당 12,504프레임, 버전 1.0.0과 동일한 매칭 코드)로 측정했습니다. 실제 Nuke 썸네일 캐시를 CPU에서 재생한 값이며 GUI 렌더가 아닙니다. 번인 타임코드는 테스트용으로 생성한 번인이며 실제 촬영본에서 읽은 값이 아닙니다. 실패 조건을 모두 포함했고, 저움직임·암전 샷이 가장 약합니다.
+개발에 쓰지 않은 샷 16개의 편집 조건 144개(모드당 12,504프레임, 버전 1.0.1과 동일한 매칭 코드)로 측정했습니다. 실제 Nuke 썸네일 캐시를 CPU에서 재생한 값이며 GUI 렌더가 아닙니다. 번인 타임코드는 테스트용으로 생성한 번인이며 실제 촬영본에서 읽은 값이 아닙니다. 실패 조건을 모두 포함했고, 저움직임·암전 샷이 가장 약합니다.
 
 | 경우 | 조건 | 이미지만 | 이미지 + 번인 TC | 98% 이상 조건 (이미지 / TC) |
 |---|---:|---:|---:|---:|

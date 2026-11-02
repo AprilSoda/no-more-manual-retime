@@ -21,7 +21,7 @@ The result is one TimeWarp node. A change that speed cannot explain, such as a c
 
 All you need is the single file `no_more_manual_retime.py`.
 
-- **Releases:** the latest `no_more_manual_retime_v1.0.0.zip` from the [Releases page](../../releases) (the tool file, README, license).
+- **Releases:** the latest `no_more_manual_retime_v1.0.1.zip` from the [Releases page](../../releases) (the tool file, README, license).
 - **Single file:** `no_more_manual_retime.py` in this repository. Use the **Raw** view to copy it.
 
 ## Install
@@ -41,11 +41,13 @@ import nuke
 nuke.pluginAddPath("./python")
 import no_more_manual_retime
 
-nuke.menu("Nuke").addCommand("JM/No More Manual Retime", no_more_manual_retime.run)
-nuke.menu("Nuke").addCommand("JM/No More Manual Retime (Batch Selected)", no_more_manual_retime.run_batch_selected)
+nuke.menu('Nuke').addCommand('NMMR/No More Manual Retime', 'no_more_manual_retime.run()', 'ctrl+alt+r')
+nuke.menu('Nuke').addCommand('NMMR/No More Manual Retime (Batch Selected)', 'no_more_manual_retime.run_batch_selected()')
 ```
 
-3. Restart Nuke. **JM > No More Manual Retime** appears in the menu bar.
+3. Restart Nuke. **NMMR > No More Manual Retime** appears in the menu bar.
+
+`ctrl+alt+r` is Cmd+Option+R on macOS. Pick another shortcut if it is already taken.
 
 ### numpy
 
@@ -53,7 +55,7 @@ Nuke does not ship with numpy. If it is missing, the first run opens an install 
 
 - **Offline:** put the numpy wheel for your platform in a `vendor/` folder next to the script (or browse to it in the window).
 - **Online:** press **Install online (pip)**; it runs Nuke's own Python with `pip install --target` into `~/.nuke_pylibs/`, outside your Nuke configuration.
-- **Shared folder:** point every workstation at one numpy folder with the `JM_NUMPY_PATH` environment variable.
+- **Shared folder:** point every workstation at one numpy folder with the `NMMR_NUMPY_PATH` environment variable.
 
 Nuke before 16 uses Python 3.10 and Nuke 16 or later uses Python 3.11, so download the wheel that matches. For example:
 
@@ -64,13 +66,13 @@ pip download numpy --only-binary=:all: --no-deps -d vendor --python-version 3.11
 ## Use
 
 1. Bring the edit movie and the plate into your script as Read nodes.
-2. Select both (optional) and run **JM > No More Manual Retime**.
+2. Select both (optional) and run **NMMR > No More Manual Retime**.
 3. Check that **EDIT** is the editorial reference and **PLATE** is the source footage. **First Frame** defaults to **Plate start**.
 4. Press **Run**.
 
 The tool creates, next to the plate, a TimeWarp, a FrameRange, a Reformat and Transform that bring the plate to the edit format, a QC difference tree (edit against the retimed plate), and report notes. Everything from one run sits in one backdrop and is undone with a single Ctrl+Z (Cmd+Z on macOS).
 
-Select several plate Read nodes and use **JM > No More Manual Retime (Batch Selected)** to solve them one after another.
+Select several plate Read nodes and use **NMMR > No More Manual Retime (Batch Selected)** to solve them one after another.
 
 ### Reading the result
 
@@ -101,12 +103,13 @@ If your offline carries a source-timecode burn-in, **Calibrate TC…** reads it 
 - Slow motion made by interpolation (such as Kronos) is still weak, especially when combined with a zoom.
 - The QC render ignores tone differences but not everything: burn-ins that exist only in the edit leave faint bright edges even on a correct retime. Judge by large, structured flashes.
 - In OCIO or ACES projects, set the colorspace on both edit and plate Reads. Left at default, the tool can stop or image-only accuracy can drop. Set it on untagged ProRes edits too.
+- The timecode Text overlay burns into the plate if left on at render time. Disable that node for clean renders.
 - Frames cut out inside a shot are not followed; they get a warning. Jumps of two or three frames get no warning, and on real footage 4- and 8-frame jumps went unflagged without readable timecode.
 - Verified on macOS with Nuke 16.1. Nuke 15.1, Windows and Linux are not yet verified in a real Nuke session.
 
 ## Accuracy
 
-Measured on 144 edit conditions from 16 shots not used in development (12,504 frames per mode, matching code identical to version 1.0.0). The numbers come from real Nuke thumbnail caches replayed on CPU, not GUI renders. The burn-in timecode was generated for the test, not read from real footage. Failures are included. Low-motion and dark shots are the weakest.
+Measured on 144 edit conditions from 16 shots not used in development (12,504 frames per mode, matching code identical to version 1.0.1). The numbers come from real Nuke thumbnail caches replayed on CPU, not GUI renders. The burn-in timecode was generated for the test, not read from real footage. Failures are included. Low-motion and dark shots are the weakest.
 
 | Case | Conditions | Image only | Image + burn-in TC | Conditions at 98%+ (image / TC) |
 |---|---:|---:|---:|---:|
