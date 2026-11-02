@@ -1537,7 +1537,7 @@ details.fold > summary:hover h3, details.geeks-hub > summary:hover .geeks-title 
   <div class="top" id="topbar">
     <span class="brand">
       <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M2 16 L7 16 L13 6 L20 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="2" cy="16" r="1.8" fill="currentColor"/><circle cx="13" cy="6" r="1.8" fill="currentColor"/><circle cx="20" cy="6" r="1.8" fill="currentColor"/></svg>
-      No More Manual Retime <span class="ver" data-k="topver">1.0.0</span>
+      No More Manual Retime <span class="ver" data-k="topver">1.0.1</span>
     </span>
     <nav class="nav" id="nav" aria-label="Sections">
       <ol>
@@ -1650,7 +1650,7 @@ details.fold > summary:hover h3, details.geeks-hub > summary:hover .geeks-title 
           </div>
         </div><div class="use-steps"><ol class="steps">
           <li><div data-k="s1">Bring the offline edit and camera plate into the script as Read nodes, then select both.</div></li>
-          <li><div data-k="s2">Run <b>JM → No More Manual Retime</b>. The selected Reads fill <b>EDIT</b> and <b>PLATE</b>; leave the defaults as they are.</div></li>
+          <li><div data-k="s2">Run <b>NMMR → No More Manual Retime</b>. The selected Reads fill <b>EDIT</b> and <b>PLATE</b>; leave the defaults as they are.</div></li>
           <li><div data-k="s3">Press <b>Run</b>. Image-only analysis finds the retime without TC calibration. Burn-in TC and split regions are optional tools for cases that need them; Look Match (Beta) is on by default.</div></li>
           <li><div data-k="s4">Read the score and warnings in the report, then scrub the QC difference.</div></li>
         </ol><p data-lead="1" class="caption rd-uinote" data-k="uinote">The tool supports Korean and English. New Reads inherit your Nuke label, font and color settings. The UI demonstrations use illustrative scores and follow the page language; measured accuracy is reported in the benchmark section.</p></div></div></div>
@@ -2198,7 +2198,7 @@ window.NKG_DATA = {"source":{"session":"look-label-4214/example/session.nk (Back
           <li><b class="lim-t" data-k="gap1t">Conditions below the 98% target</b><span class="lim-b" data-k="gap1">Among the 102 general-retime conditions on shots not used in development, 12 remain below the per-condition 98% target with image-only analysis and 2 with image + burn-in TC analysis. Among the 34 reframe conditions, 9 and 1.</span></li>
           <li><b class="lim-t" data-k="nn-gapt">The average hides weak spots.</b><span class="lim-b" data-k="nn-gap">In the development set’s added short cuts, one fixed-reframe condition is 19/36 exact frames with image-only analysis (36/36 with burn-in TC). Low-motion footage in the development set (6 source clips, 48 conditions) is counted separately and is lower: 82.85% image-only, 95.03% with burn-in TC.</span></li>
           <li><b class="lim-t" data-k="gap5t">Weakest shots and synthetic TC</b><span class="lim-b" data-k="gap5">Low-motion and dark shots are the weakest. The burn-in TC in this measurement was generated for the test, not read from real footage or its metadata.</span></li>
-          <li><b class="lim-t" data-k="gap2t">Additional-source cohort, image-only</b><span class="lim-b" data-k="gap2">The separate 138-condition additional-source cached-CPU cohort is 79.10% with image-only analysis and 100.00% with image + burn-in TC analysis. The image-only result remains the clearest measured limitation.</span></li>
+          <li><b class="lim-t" data-k="gap2t">Additional-source group, image-only</b><span class="lim-b" data-k="gap2">The separate 138-condition additional-source cached-CPU group is 79.10% with image-only analysis and 100.00% with image + burn-in TC analysis. The image-only result remains the clearest measured limitation.</span></li>
           <li><b class="lim-t" data-k="gap3t">Unusual color management</b><span class="lim-b" data-k="gap3">In OCIO or ACES projects, set the colorspace on both edit and plate Reads. Set that way, a small set of conditions matched Nuke's default color management closely; left at default, the tool can stop or image-only accuracy can drop. Burn-in TC is less affected. Unusual pipelines still need separate QC.</span></li>
         </ul><div class="rd-block" id="score"><div class="sec-label rd-eyebrow" data-k="l-score">Reading the result</div><h3 class="rd-h3" data-k="h-score">The match score</h3><p data-lead="1" data-k="p-score">Each plate gets an image-similarity score derived from its matching cost. A displayed 100% does not prove pixel identity or correct timing. This score is separate from benchmark frame accuracy.</p><div data-play>
           <div class="score">
@@ -2211,7 +2211,7 @@ window.NKG_DATA = {"source":{"session":"look-label-4214/example/session.nk (Back
             <div class="grade mid"><b data-k="gm-b">Fair · about 70–85%</b><p data-k="gm-p">In the QC difference, step through the frames the report lists.</p></div>
             <div class="grade hi"><b data-k="gh-b">Good · about 85% and up</b><p data-k="gh-p" data-lead="1">This measures image similarity, not frame accuracy. Check the QC Difference across the sequence even when the score is good.</p></div>
           </div>
-        </div><p data-lead="1" data-k="p-flag">The score is separate from the warnings. A shot can match well overall and still contain one suspected cut; the cut warning says where. A <b>[!] low confidence</b> warning appears when image-only analysis cannot pin the frames down, even if the score looks fine. Warning coverage is reported separately and is not counted as frame accuracy.</p></div><details class="geeks-hub" id="geeks-details"><summary><span><span class="geeks-title" data-k="geeks-open-h">Benchmarks for Geeks</span><span class="geeks-deck" data-k="geeks-open-p">Test definitions, cohort boundaries, environment, current results and limits</span><span class="rd-meta" data-k="gk-meta">7 tables · 5 tabs</span></span></summary><div class="geeks-body"><p class="geek-sub" data-k="s-geek">The numbers, in detail</p><div class="rd-tabset rd-geek" data-group="geek"><div class="rd-tabs" role="tablist" data-aria="a-geek"><button type="button" class="rd-tab" role="tab" id="tab-geek-def" aria-controls="tp-geek-def" aria-selected="true"><span data-k="gt-a">Definitions and scope</span></button><button type="button" class="rd-tab" role="tab" id="tab-geek-chk" aria-controls="tp-geek-chk" aria-selected="false"><span data-k="gt-b">Four checks</span></button><button type="button" class="rd-tab" role="tab" id="tab-geek-coh" aria-controls="tp-geek-coh" aria-selected="false"><span data-k="gt-c">By cohort</span></button><button type="button" class="rd-tab" role="tab" id="tab-geek-add" aria-controls="tp-geek-add" aria-selected="false"><span data-k="gt-d">Additional sources</span></button><button type="button" class="rd-tab" role="tab" id="tab-geek-gui" aria-controls="tp-geek-gui" aria-selected="false"><span data-k="gt-e">Actual Nuke GUI audit</span></button></div><div class="rd-panel" role="tabpanel" id="tp-geek-def" aria-labelledby="tab-geek-def"><div class="rd-pin">
+        </div><p data-lead="1" data-k="p-flag">The score is separate from the warnings. A shot can match well overall and still contain one suspected cut; the cut warning says where. A <b>[!] low confidence</b> warning appears when image-only analysis cannot pin the frames down, even if the score looks fine. Warning coverage is reported separately and is not counted as frame accuracy.</p></div><details class="geeks-hub" id="geeks-details"><summary><span><span class="geeks-title" data-k="geeks-open-h">Benchmarks for Geeks</span><span class="geeks-deck" data-k="geeks-open-p">Test definitions, group boundaries, environment, current results and limits</span><span class="rd-meta" data-k="gk-meta">7 tables · 5 tabs</span></span></summary><div class="geeks-body"><p class="geek-sub" data-k="s-geek">The numbers, in detail</p><div class="rd-tabset rd-geek" data-group="geek"><div class="rd-tabs" role="tablist" data-aria="a-geek"><button type="button" class="rd-tab" role="tab" id="tab-geek-def" aria-controls="tp-geek-def" aria-selected="true"><span data-k="gt-a">Definitions and scope</span></button><button type="button" class="rd-tab" role="tab" id="tab-geek-chk" aria-controls="tp-geek-chk" aria-selected="false"><span data-k="gt-b">Four checks</span></button><button type="button" class="rd-tab" role="tab" id="tab-geek-coh" aria-controls="tp-geek-coh" aria-selected="false"><span data-k="gt-c">By group</span></button><button type="button" class="rd-tab" role="tab" id="tab-geek-add" aria-controls="tp-geek-add" aria-selected="false"><span data-k="gt-d">Additional sources</span></button><button type="button" class="rd-tab" role="tab" id="tab-geek-gui" aria-controls="tp-geek-gui" aria-selected="false"><span data-k="gt-e">Actual Nuke GUI audit</span></button></div><div class="rd-panel" role="tabpanel" id="tp-geek-def" aria-labelledby="tab-geek-def"><div class="rd-pin">
         <p data-k="acc-full">The earlier development and regression set contains 394 edit conditions, replayed in two modes (image-only and image + burn-in TC) for 788 runs in total (cached CPU replay outside Nuke, first recorded with an earlier development engine). The development-set general-retime figure (separate from the shots-not-used headline above) combines two groups fixed in advance: 82 existing conditions from 17 source clips (explicit holds and reverse playback excluded) and 96 added conditions from 12 source clips (holds and reverse playback included). Together that is 29 source clips, 178 edit conditions and 11,506 frames per mode, with 99.29% exact frames for image-only analysis and 99.84% for image + burn-in TC analysis. All 178 conditions were measured on the same engine. Low-motion and special conditions are reported separately. Accuracy for additional footage and special conditions is reported separately. These figures come from data used during development and do not guarantee accuracy on new footage; results in an actual Nuke session may differ.</p>
         <p data-k="p-ver-detail">Measured through 2026-10-25 with the frozen engine. The cached CPU ledger contains 394 recorded edit conditions replayed in image-only and image + burn-in TC modes: 788 runs and 68,940 scored frames across both modes. It is not a fresh-render or actual-GUI count. The existing 82 general-retime conditions and the added 96 were later replayed together on a newer engine (538 conditions, 1,076 runs, no errors); the existing 82 gave the same exact-frame counts as in the ledger above.</p>
         <ul class="notes"><li data-k="gap4">A very small fixed zoom (1.02×) is still missed, while the measured 1.03× and 1.04× cases are 100.00%. This is a spatial-transform limitation; the product’s primary completion target is correct frame correspondence.</li></ul>
@@ -2233,7 +2233,7 @@ window.NKG_DATA = {"source":{"session":"look-label-4214/example/session.nk (Back
         </div></div><div class="rd-panel" role="tabpanel" id="tp-geek-chk" aria-labelledby="tab-geek-chk" hidden="until-found"><div class="rd-pin"><h3 data-k="chk-h">Four checks, counted apart</h3>
         <div class="checks">
           <div class="check"><h4 data-k="chk1h">Strict cached-CPU audit</h4><p class="q" data-k="chk1q">Did every recorded frozen-engine CPU replay pass its strict comparison?</p><div class="v">788<small>/ 788</small></div><p data-k="chk1p">All 394 recorded edit conditions completed in both modes. Every strict comparison passed, with no newly wrong frame.</p><div class="no" data-k="chk1n">This verifies cached replay behavior. It is not a fresh-render or current Nuke GUI result.</div></div>
-          <div class="check"><h4 data-k="chk2h">Frame accuracy</h4><p class="q" data-k="chk2q">Did it pick the right plate frame?</p><div class="v"><small data-k="chk2v" style="margin:0;font-size:15px">Reported by cohort</small></div><p data-k="chk2p">Shots not used in development (144 conditions, real Nuke caches replayed on CPU): general retime 97.35% image-only and 99.87% image + burn-in TC (102 conditions); reframe 92.59% and 99.80% (34); 4×/8× 90.10% and 100.00% (8). Development set, cached CPU replay, general-retime total (178 conditions, same engine, used during development): 11,424/11,506 image-only (99.29%) and 11,488/11,506 image + burn-in TC (99.84%); of which the existing 82 conditions are 7,229/7,290 (99.16%) and 7,273/7,290 (99.77%). Additional-source cohort: 9,492/12,000 image-only (79.10%) and 12,000/12,000 image + burn-in TC (100.00%).</p><div class="no" data-k="chk2n">Exact frame only. It says nothing about ±1 frame, picture quality or interpolated frames.</div></div>
+          <div class="check"><h4 data-k="chk2h">Frame accuracy</h4><p class="q" data-k="chk2q">Did it pick the right plate frame?</p><div class="v"><small data-k="chk2v" style="margin:0;font-size:15px">Reported by group</small></div><p data-k="chk2p">Shots not used in development (144 conditions, real Nuke caches replayed on CPU): general retime 97.35% image-only and 99.87% image + burn-in TC (102 conditions); reframe 92.59% and 99.80% (34); 4×/8× 90.10% and 100.00% (8). Development set, cached CPU replay, general-retime total (178 conditions, same engine, used during development): 11,424/11,506 image-only (99.29%) and 11,488/11,506 image + burn-in TC (99.84%); of which the existing 82 conditions are 7,229/7,290 (99.16%) and 7,273/7,290 (99.77%). Additional-source group: 9,492/12,000 image-only (79.10%) and 12,000/12,000 image + burn-in TC (100.00%).</p><div class="no" data-k="chk2n">Exact frame only. It says nothing about ±1 frame, picture quality or interpolated frames.</div></div>
           <div class="check"><h4 data-k="chk3h">Input and dump integrity</h4><p class="q" data-k="chk3q">Did the audit inputs or recorded outputs change unexpectedly?</p><div class="v"><small data-k="chk3v" style="margin:0;font-size:15px">403 + 478 unchanged</small></div><p data-k="chk3p">All 403 recorded input hashes and all 478 recorded result statistics remained unchanged during the final strict audit.</p><div class="no" data-k="chk3n">Hash integrity establishes identical recorded files, not accuracy on other material.</div></div>
           <div class="check"><h4 data-k="chk4h">Actual Nuke GUI audit</h4><p class="q" data-k="chk4q">Did all selected frozen-engine GUI runs execute, save and pass strict comparison?</p><div class="v">62<small>/ 62</small></div><p data-k="chk4p">All 31 selected hard conditions completed in both modes. All 62 runs executed and saved; no temporary Group or cache item remained.</p><div class="no" data-k="chk4n">This deliberately difficult set is not a representative accuracy sample of the ordinary-retime conditions.</div></div>
         </div>
@@ -2261,7 +2261,7 @@ window.NKG_DATA = {"source":{"session":"look-label-4214/example/session.nk (Back
               <tr><td data-k="nn-r1a">Existing 82 conditions, 17 source videos: ordinary retimes, fixed scale and ramps (explicit holds and reverse playback excluded)</td><td class="num">7,290</td><td class="num">99.16%</td><td class="num">99.77%</td></tr>
               <tr><td data-k="nn-r1b">Added 96 conditions, 12 source videos (holds and reverse playback included)</td><td class="num">4,216</td><td class="num">99.50%</td><td class="num">99.98%</td></tr>
               <tr><td data-k="nn-r1c">Low-motion and static-ambiguity conditions, reported separately: 48 conditions, 6 source videos (not in the total)</td><td class="num">2,496</td><td class="num">82.85%</td><td class="num">95.03%</td></tr>
-              <tr><td data-k="sep-r2">Additional-source cached-CPU cohort (138 edit conditions)</td><td class="num">12,000</td><td class="num"><b>79.10%</b></td><td class="num"><b>100.00%</b></td></tr>
+              <tr><td data-k="sep-r2">Additional-source cached-CPU group (138 edit conditions)</td><td class="num">12,000</td><td class="num"><b>79.10%</b></td><td class="num"><b>100.00%</b></td></tr>
             </tbody>
           </table>
         </div>
@@ -2294,10 +2294,10 @@ window.NKG_DATA = {"source":{"session":"look-label-4214/example/session.nk (Back
         </ul>
 
         </div></div><div class="rd-panel" role="tabpanel" id="tp-geek-add" aria-labelledby="tab-geek-add" hidden="until-found"><div class="rd-pin"><h3 data-k="priv-h">Additional-source evaluation · cached CPU replay</h3>
-        <p data-k="priv-p">Source identities, filenames and images are not part of this distribution page. The 138 recorded edit conditions are scored as one separate cached-CPU cohort and are not added to the main results.</p>
+        <p data-k="priv-p">Source identities, filenames and images are not part of this distribution page. The 138 recorded edit conditions are scored as one separate cached-CPU group and are not added to the main results.</p>
         <div class="tbl nums">
           <table>
-            <thead><tr><th data-k="priv-c1">Cohort</th><th data-k="sep-c2">Edit conditions</th><th data-k="priv-c3">Frames per mode</th><th data-k="sep-c3">Image-only analysis</th><th data-k="sep-c4">Image + burn-in TC analysis</th></tr></thead>
+            <thead><tr><th data-k="priv-c1">Group</th><th data-k="sep-c2">Edit conditions</th><th data-k="priv-c3">Frames per mode</th><th data-k="sep-c3">Image-only analysis</th><th data-k="sep-c4">Image + burn-in TC analysis</th></tr></thead>
             <tbody>
               <tr><td data-k="priv-r3">Additional-source total</td><td class="num"><b>138</b></td><td class="num"><b>12,000</b></td><td class="num"><b>9,492 / 12,000 (79.10%)</b></td><td class="num"><b>12,000 / 12,000 (100.00%)</b></td></tr>
             </tbody>
@@ -2323,8 +2323,8 @@ window.NKG_DATA = {"source":{"session":"look-label-4214/example/session.nk (Back
         <p class="tbl-note" data-k="guicat-x">Category total: 9,492/12,000 correct frames in image-only analysis and 12,000/12,000 with image + burn-in TC analysis. Category totals are cached CPU replay results and are not mixed with historical or current GUI runs.</p>
         <ul class="notes">
           <li data-k="guicat-n1">The visible-content labels describe the tested windows and do not claim that every frame in a row has identical content.</li>
-          <li data-k="guicat-n2">The category table explains where errors concentrate; it does not change the 79.10% image-only cohort result.</li>
-          <li data-k="guicat-n3">The measured cohorts are finite local test sets, not a guarantee on arbitrary footage.</li>
+          <li data-k="guicat-n2">The category table explains where errors concentrate; it does not change the 79.10% image-only group result.</li>
+          <li data-k="guicat-n3">The measured groups are finite local test sets, not a guarantee on arbitrary footage.</li>
         </ul>
 
         </div></div><div class="rd-panel" role="tabpanel" id="tp-geek-gui" aria-labelledby="tab-geek-gui" hidden="until-found"><div class="rd-pin">
@@ -2481,13 +2481,11 @@ window.NKG_DATA = {"source":{"session":"look-label-4214/example/session.nk (Back
 <div class="rd-body">
 <h2 class="sec" data-k="h-inst">One file, plus numpy</h2><p data-lead="1" class="rd-lead rd-lead-s" data-k="p-inst">Tested on Nuke 16.1v3, macOS Apple Silicon. Nuke 15.1, Windows and Linux are not verified. It needs Nuke with a GUI (PySide2 or PySide6); without Qt it falls back to plain Nuke panels.</p><p class="caption" data-k="p-dl"><a href="https://github.com/vfx-compositor/no-more-manual-retime/releases/latest" rel="noopener" target="_blank">Download the latest release</a> · <a href="https://github.com/vfx-compositor/no-more-manual-retime" rel="noopener" target="_blank">GitHub repository</a> · <a href="https://www.nukepedia.com/tools/python/misc/no-more-manual-retime-auto-retime-matching/" rel="noopener" target="_blank">Nukepedia</a></p><div class="rd-card inst-1"><h3 data-k="i1h">1. Add the script</h3><p data-k="i1p">Copy <code class="inline">no_more_manual_retime.py</code> into a folder on Nuke's plug-in path, such as <code class="inline">~/.nuke/python</code>, and register it in <code class="inline">menu.py</code>:</p><div class="code"><button class="copy" type="button" data-k="copy">Copy</button><pre><span class="c-kw">import</span> nuke
 
-<span class="c-kw">try</span>:
-    <span class="c-kw">import</span> no_more_manual_retime
-    nuke.menu(<span class="c-str">'Nuke'</span>).addCommand(<span class="c-str">'JM/No More Manual Retime'</span>, <span class="c-str">'no_more_manual_retime.run()'</span>, <span class="c-str">'ctrl+alt+r'</span>)
-    nuke.menu(<span class="c-str">'Nuke'</span>).addCommand(<span class="c-str">'JM/No More Manual Retime (Batch Selected)'</span>, <span class="c-str">'no_more_manual_retime.run_batch_selected()'</span>)
-<span class="c-kw">except</span> Exception <span class="c-kw">as</span> e:
-    print(<span class="c-str">'No More Manual Retime failed to load: %s'</span> % e)</pre></div><p class="caption" data-k="i1n"><kbd>ctrl+alt+r</kbd> is Cmd+Option+R on macOS. Choose another shortcut if yours is taken.</p></div><div class="rd-card inst-2"><div class="inst-2-txt"><h3 data-k="i2h">2. numpy, installed from inside Nuke</h3><p data-lead="1" data-k="i2p">Nuke ships without numpy, and each version has its own Python (before 16: 3.10; 16 or later: 3.11). If numpy is missing, the first <b>JM → No More Manual Retime</b> opens an install window instead of running. No terminal, and no restart afterwards. numpy goes into <code class="inline">~/.nuke_pylibs/py311</code> (<code class="inline">py310</code> before Nuke 16), outside your Nuke config. Pick one of three ways:</p><div class="rd-tabset rd-sub" data-group="np"><div class="rd-tabs" role="tablist" data-aria="a-np"><button type="button" class="rd-tab" role="tab" id="tab-np-off" aria-controls="tp-np-off" aria-selected="true"><span data-k="it-off">Offline</span></button><button type="button" class="rd-tab" role="tab" id="tab-np-on" aria-controls="tp-np-on" aria-selected="false"><span data-k="it-on">Online</span></button><button type="button" class="rd-tab" role="tab" id="tab-np-sh" aria-controls="tp-np-sh" aria-selected="false"><span data-k="it-sh">Shared folder</span></button></div><div class="rd-panel" role="tabpanel" id="tp-np-off" aria-labelledby="tab-np-off"><div class="rd-pin"><ul class="notes"><li data-k="i2a"><b>Offline.</b> Put numpy wheels (.whl install files) in a <code class="inline">vendor/</code> folder next to the script. The window picks the wheel that matches the running Python, OS and CPU and unpacks it. No network, no pip.</li></ul><p data-lead="1" data-k="i3p">Wheels for the offline way are downloaded once, on any machine with internet. <code class="inline">--platform</code> names the target, not the machine you run it on. Wheel files are not part of the package.</p><div class="code"><button class="copy" type="button" data-k="copy">Copy</button><pre>pip download numpy --only-binary=:all: --no-deps -d vendor --python-version 3.11 --platform macosx_14_0_arm64
-pip download numpy --only-binary=:all: --no-deps -d vendor --python-version 3.11 --platform win_amd64</pre></div></div></div><div class="rd-panel" role="tabpanel" id="tp-np-on" aria-labelledby="tab-np-on" hidden="until-found"><div class="rd-pin"><ul class="notes"><li data-k="i2b"><b>Online.</b> The window runs Nuke's own Python with pip in the background, shows the output, and can be cancelled.</li></ul></div></div><div class="rd-panel" role="tabpanel" id="tp-np-sh" aria-labelledby="tab-np-sh" hidden="until-found"><div class="rd-pin"><ul class="notes"><li data-k="i2c"><b>Shared folder.</b> Point multiple workstations at one shared folder with <code class="inline">JM_NUMPY_PATH</code>, or type it into the window once; it is remembered.</li></ul></div></div></div><details class="more "><summary><span data-k="rd-instfail">If an install fails</span></summary><div class="more-in"><p data-k="i4p">If an install fails, the window says why (no matching wheel, a damaged wheel, pip's last output) and the other ways stay available. Verified in a real Nuke on macOS arm64 only; Windows and Linux wheel matching is unit-tested, not yet run in Nuke.</p></div></details></div><div class="inst-2-fig"><div class="demo" id="npdemo" style="grid-template-columns:minmax(0,1fr);margin-top:6px">
+<span class="c-kw">import</span> no_more_manual_retime
+
+nuke.menu(<span class="c-str">'Nuke'</span>).addCommand(<span class="c-str">'NMMR/No More Manual Retime'</span>, <span class="c-str">'no_more_manual_retime.run()'</span>, <span class="c-str">'ctrl+alt+r'</span>)
+nuke.menu(<span class="c-str">'Nuke'</span>).addCommand(<span class="c-str">'NMMR/No More Manual Retime (Batch Selected)'</span>, <span class="c-str">'no_more_manual_retime.run_batch_selected()'</span>)</pre></div><p class="caption" data-k="i1n"><kbd>ctrl+alt+r</kbd> is Cmd+Option+R on macOS. Choose another shortcut if yours is taken.</p></div><div class="rd-card inst-2"><div class="inst-2-txt"><h3 data-k="i2h">2. numpy, installed from inside Nuke</h3><p data-lead="1" data-k="i2p">Nuke ships without numpy, and each version has its own Python (before 16: 3.10; 16 or later: 3.11). If numpy is missing, the first <b>NMMR → No More Manual Retime</b> opens an install window instead of running. No terminal, and no restart afterwards. numpy goes into <code class="inline">~/.nuke_pylibs/py311</code> (<code class="inline">py310</code> before Nuke 16), outside your Nuke config. Pick one of three ways:</p><div class="rd-tabset rd-sub" data-group="np"><div class="rd-tabs" role="tablist" data-aria="a-np"><button type="button" class="rd-tab" role="tab" id="tab-np-off" aria-controls="tp-np-off" aria-selected="true"><span data-k="it-off">Offline</span></button><button type="button" class="rd-tab" role="tab" id="tab-np-on" aria-controls="tp-np-on" aria-selected="false"><span data-k="it-on">Online</span></button><button type="button" class="rd-tab" role="tab" id="tab-np-sh" aria-controls="tp-np-sh" aria-selected="false"><span data-k="it-sh">Shared folder</span></button></div><div class="rd-panel" role="tabpanel" id="tp-np-off" aria-labelledby="tab-np-off"><div class="rd-pin"><ul class="notes"><li data-k="i2a"><b>Offline.</b> Put numpy wheels (.whl install files) in a <code class="inline">vendor/</code> folder next to the script. The window picks the wheel that matches the running Python, OS and CPU and unpacks it. No network, no pip.</li></ul><p data-lead="1" data-k="i3p">Wheels for the offline way are downloaded once, on any machine with internet. <code class="inline">--platform</code> names the target, not the machine you run it on. Wheel files are not part of the package.</p><div class="code"><button class="copy" type="button" data-k="copy">Copy</button><pre>pip download numpy --only-binary=:all: --no-deps -d vendor --python-version 3.11 --platform macosx_14_0_arm64
+pip download numpy --only-binary=:all: --no-deps -d vendor --python-version 3.11 --platform win_amd64</pre></div></div></div><div class="rd-panel" role="tabpanel" id="tp-np-on" aria-labelledby="tab-np-on" hidden="until-found"><div class="rd-pin"><ul class="notes"><li data-k="i2b"><b>Online.</b> The window runs Nuke's own Python with pip in the background, shows the output, and can be cancelled.</li></ul></div></div><div class="rd-panel" role="tabpanel" id="tp-np-sh" aria-labelledby="tab-np-sh" hidden="until-found"><div class="rd-pin"><ul class="notes"><li data-k="i2c"><b>Shared folder.</b> Point multiple workstations at one shared folder with <code class="inline">NMMR_NUMPY_PATH</code>, or type it into the window once; it is remembered.</li></ul></div></div></div><details class="more "><summary><span data-k="rd-instfail">If an install fails</span></summary><div class="more-in"><p data-k="i4p">If an install fails, the window says why (no matching wheel, a damaged wheel, pip's last output) and the other ways stay available. Verified in a real Nuke on macOS arm64 only; Windows and Linux wheel matching is unit-tested, not yet run in Nuke.</p></div></details></div><div class="inst-2-fig"><div class="demo" id="npdemo" style="grid-template-columns:minmax(0,1fr);margin-top:6px">
           <div class="demo-main">
             <div class="nkwin nk-wide" id="npwin" role="img" aria-label="Mock-up of the install window that opens when numpy is missing.">
               <div class="nk-title"><i></i><i></i><i></i><span data-t="np-title">No More Manual Retime · NumPy</span></div>
@@ -2538,7 +2536,7 @@ pip download numpy --only-binary=:all: --no-deps -d vendor --python-version 3.11
           <div class="key"><span class="ks"><kbd>Home</kbd><kbd>End</kbd></span><span data-k="k4">First / last frame</span></div>
           <div class="key"><span class="ks"><kbd>Shift</kbd>+ move</span><span data-k="k5">Extend the selection</span></div>
           <div class="key"><span class="ks"><kbd>Esc</kbd></span><span data-k="k6">Stop playback, then close</span></div>
-        </div></div></details></div></div><div class="rd-panel" role="tabpanel" id="tp-use-batch" aria-labelledby="tab-use-batch" hidden="until-found"><div class="rd-pin"><h3 class="rd-vh" data-k="b-h">Batch</h3><p data-lead="1" data-k="b-p">Batch supports both image-sequence and movie plates. Select your Reads and open <b>JM → No More Manual Retime (Batch Selected)</b>, then check each PLATE–EDIT pair in the list. If a movie's role is unclear, choose which Read is the plate. Rows run one after another; a failed row is reported and the rest continue. Double-click an edit cell to choose a different edit.</p><div class="demo" id="btdemo" style="grid-template-columns:minmax(0,1fr);margin:18px 0 22px">
+        </div></div></details></div></div><div class="rd-panel" role="tabpanel" id="tp-use-batch" aria-labelledby="tab-use-batch" hidden="until-found"><div class="rd-pin"><h3 class="rd-vh" data-k="b-h">Batch</h3><p data-lead="1" data-k="b-p">Batch supports both image-sequence and movie plates. Select your Reads and open <b>NMMR → No More Manual Retime (Batch Selected)</b>, then check each PLATE–EDIT pair in the list. If a movie's role is unclear, choose which Read is the plate. Rows run one after another; a failed row is reported and the rest continue. Double-click an edit cell to choose a different edit.</p><div class="demo" id="btdemo" style="grid-template-columns:minmax(0,1fr);margin:18px 0 22px">
           <div class="demo-main">
             <div class="nkwin nk-wide" id="btwin" role="img" aria-label="Mock-up of the batch table.">
               <div class="nk-title"><i></i><i></i><i></i><span>No More Manual Retime</span></div>
@@ -2795,7 +2793,6 @@ html[lang="ko"] .pth-win { word-break: keep-all; }
   <h4 data-pth="where-h"></h4>
   <p data-pth="where-p"></p>
   <div class="pth-wfiles"><span><em data-pth="where-personal"></em><code id="pth-wf-file"></code></span><span><em><span data-pth="where-shared"></span> · <span data-pth="where-envl"></span></em><code id="pth-wf-env"></code></span></div>
-  <p class="pth-old" id="pth-wf-old" data-pth="where-old" hidden></p>
   <p class="pth-old" data-k="pth-where-more">The variable can list one or more shared JSON files. They are read first and your personal file is applied on top; the window writes only the personal file.</p>
 </div>
 
@@ -2813,10 +2810,7 @@ html[lang="ko"] .pth-win { word-break: keep-all; }
   "file": "~/.nuke/no_more_manual_retime_paths.json",
   "env": "NMMR_PATHS",
   "nextFile": "~/.nuke/no_more_manual_retime_paths.json",
-  "nextEnv": "NMMR_PATHS",
-  "legacyFile": "~/.nuke/JM_auto_retime_paths.json",
-  "whereLegacy": false,
-  "legacyEnv": "JM_AR_PATHS"
+  "nextEnv": "NMMR_PATHS"
  },
  "en": {
   "tag": "Interactive demo",
@@ -2906,8 +2900,7 @@ html[lang="ko"] .pth-win { word-break: keep-all; }
   "aria-lay": "Example folder layout",
   "aria-plate": "Plate path parts",
   "aria-edit": "Edit path parts",
-  "foot": "Saved to {nextFile}. The shared-file variable is {nextEnv}.",
-  "where-old": "The old names ({legacyFile}, {legacyEnv}) are still read. If both variables are set, only the new one is used."
+  "foot": "Saved to {nextFile}. The shared-file variable is {nextEnv}."
  },
  "ko": {
   "tag": "대화형 시연",
@@ -2997,8 +2990,7 @@ html[lang="ko"] .pth-win { word-break: keep-all; }
   "aria-lay": "예시 폴더 구조",
   "aria-plate": "플레이트 경로의 칸",
   "aria-edit": "편집본 경로의 칸",
-  "foot": "저장 위치: {nextFile}. 공용 파일을 알려 주는 환경 변수는 {nextEnv}입니다.",
-  "where-old": "옛 이름({legacyFile}, {legacyEnv})도 계속 읽습니다. 환경 변수가 둘 다 있으면 새 변수만 씁니다."
+  "foot": "저장 위치: {nextFile}. 공용 파일을 알려 주는 환경 변수는 {nextEnv}입니다."
  }
 };
   var C = I18N.consts;
@@ -3240,7 +3232,7 @@ html[lang="ko"] .pth-win { word-break: keep-all; }
     ['plate', 'edit'].forEach(function (k) { blk[k] = evCache[k] && evCache[k].blocked ? evCache[k].blocked.i : -1; });
     qa('[data-pth]').forEach(function (el) { el.textContent = t(el.dataset.pth); });
     qa('[data-pth-aria]').forEach(function (el) { el.setAttribute('aria-label', t(el.dataset.pthAria)); });
-    q('#pth-wf-file').textContent = C.file; q('#pth-wf-env').textContent = C.env; q('#pth-wf-old').hidden = !C.whereLegacy;
+    q('#pth-wf-file').textContent = C.file; q('#pth-wf-env').textContent = C.env;
     var st = q('#pth-st'); st.textContent = t(S.dirty ? 'st-dirty' : 'st-saved'); st.dataset.dirty = S.dirty ? '1' : '0';
     var nx = !S.plate ? 'nx-start' : (blk.plate >= 0 || blk.edit >= 0) ? 'nx-fix' : hasGuess() ? 'nx-check' : 'nx-ok';
     q('#pth-next').textContent = t(nx);
@@ -3873,7 +3865,7 @@ html[lang="ko"] .pth-win { word-break: keep-all; }
 </script>
 </main>
   <footer>
-    <span data-k="foot1">No More Manual Retime 1.0.0</span>
+    <span data-k="foot1">No More Manual Retime 1.0.1</span>
     <span data-k="foot2">Tested on Nuke 16.1v3 (macOS Apple Silicon); needs numpy</span>
   </footer>
 </div>
@@ -4106,15 +4098,15 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     copy: '복사',
     i1n: '<kbd>ctrl+alt+r</kbd>은 macOS에서 Cmd+Option+R입니다. 이미 쓰는 단축키라면 다른 키로 바꾸세요.',
     i2h: '2. numpy는 Nuke 안에서 설치',
-    i2p: 'Nuke에는 numpy가 들어 있지 않고, 버전마다 파이썬도 다릅니다(16 미만은 3.10, 16 이상은 3.11). numpy가 없으면 처음 <b>JM → No More Manual Retime</b>을 열 때 실행 대신 설치 창이 뜹니다. 터미널이 필요 없고, 설치 뒤 재시작도 필요 없습니다. numpy는 Nuke 설정 폴더 밖인 <code class="inline">~/.nuke_pylibs/py311</code>(15.1은 <code class="inline">py310</code>)에 들어갑니다. 세 가지 중 하나를 고릅니다.',
+    i2p: 'Nuke에는 numpy가 들어 있지 않고, 버전마다 파이썬도 다릅니다(16 미만은 3.10, 16 이상은 3.11). numpy가 없으면 처음 <b>NMMR → No More Manual Retime</b>을 열 때 실행 대신 설치 창이 뜹니다. 터미널이 필요 없고, 설치 뒤 재시작도 필요 없습니다. numpy는 Nuke 설정 폴더 밖인 <code class="inline">~/.nuke_pylibs/py311</code>(15.1은 <code class="inline">py310</code>)에 들어갑니다. 세 가지 중 하나를 고릅니다.',
     i2a: '<b>오프라인.</b> 스크립트 옆 <code class="inline">vendor/</code> 폴더에 numpy 휠(.whl 설치 파일)을 넣어 둡니다. 창이 실행 중인 파이썬·OS·CPU에 맞는 휠을 골라 압축을 풉니다. 네트워크와 pip가 필요 없습니다.',
     i2b: '<b>온라인.</b> 창이 Nuke 자체 파이썬의 pip를 백그라운드로 실행합니다. 출력이 보이고 취소할 수 있습니다.',
-    i2c: '<b>공유 폴더.</b> <code class="inline">JM_NUMPY_PATH</code>로 여러 작업 PC가 공용 폴더 하나를 보게 하거나, 창에 한 번 입력합니다. 입력한 경로는 기억됩니다.',
+    i2c: '<b>공유 폴더.</b> <code class="inline">NMMR_NUMPY_PATH</code>로 여러 작업 PC가 공용 폴더 하나를 보게 하거나, 창에 한 번 입력합니다. 입력한 경로는 기억됩니다.',
     i3p: '오프라인용 휠은 인터넷이 되는 아무 PC에서 한 번 받습니다. <code class="inline">--platform</code>은 이 명령을 실행하는 PC가 아니라 설치할 대상입니다. 휠 파일은 패키지에 들어 있지 않습니다.',
     i4p: '설치가 실패하면 창에 이유(맞는 휠 없음, 손상된 휠, pip 마지막 출력)가 표시되고 다른 방법은 그대로 쓸 수 있습니다. 실제 Nuke에서는 macOS arm64만 검증했고, Windows·Linux 휠 매칭은 단위 테스트만 했습니다.',
     'l-use': '사용법', 'h-use': '불러오고, 선택하고, 실행',
     s1: '편집본과 플레이트를 Read 노드로 불러온 뒤 두 노드를 선택합니다.',
-    s2: '<b>JM → No More Manual Retime</b>을 실행합니다. 선택한 Read가 <b>EDIT</b>과 <b>PLATE</b>에 채워지며 기본 설정을 그대로 둡니다.',
+    s2: '<b>NMMR → No More Manual Retime</b>을 실행합니다. 선택한 Read가 <b>EDIT</b>과 <b>PLATE</b>에 채워지며 기본 설정을 그대로 둡니다.',
     s3: '<b>실행</b>을 누르면 TC 보정 없이 이미지만 분석으로 리타임을 찾습니다. 번인 TC와 분할 영역은 필요한 경우에만 쓰는 추가 옵션이고, 룩 매치(Beta)는 기본으로 켜져 있습니다.',
     s4: '리포트의 일치도와 경고를 확인한 뒤 QC difference를 훑어봅니다.',
     uinote: '툴은 한국어·영어를 지원합니다. 새 Read는 사용 중인 Nuke의 라벨·글꼴·색상 설정을 따릅니다. UI 시연의 점수는 설명용 예시이며 페이지 언어를 따릅니다. 실측 정확도는 벤치마크에서 별도로 표시합니다.',
@@ -4127,7 +4119,7 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     'tc-p2': '<b>이미지 + 번인 TC 분석.</b> 확신하고 읽은 프레임이 30% 이상이고 그중 80% 이상이 플레이트 범위 안이면, 읽은 값을 고정점으로 삼아 경로를 찾습니다. 이때도 속도 변화만 허용합니다. 미달이면 약한 힌트로만 쓰거나 쓰지 않습니다. 이미지와 안 맞으면 이미지가 우선합니다. 이미지와 뚜렷이 어긋나는 값은 버리고, 타임코드 전체가 밀렸거나 이미지보다 늦으면 <i>TC 오프셋 +1 의심</i> 같은 경고를 띄우고 타임코드를 쓰지 않은 이미지만 분석으로 찾습니다. 타임코드 줄의 배지는 프레임 정확도가 아닌 판독률을 표시합니다(예: <i>TC 우선 · 판독률 87%</i>).',
     'tc-p3': '플레이트에 쓸 수 있는 타임코드 메타데이터가 없으면 첫 프레임의 타임코드를 그림으로 추정합니다. 판독에 실패해도 작업은 멈추지 않습니다.',
     'b-h': '배치',
-    'b-p': '배치는 이미지 시퀀스와 무비 플레이트를 모두 지원합니다. Read들을 선택하고 <b>JM → No More Manual Retime (Batch Selected)</b>를 연 뒤 목록에서 각 PLATE–EDIT 짝을 확인합니다. 무비의 역할이 불명확하면 어떤 Read가 플레이트인지 직접 고릅니다. 각 행을 순서대로 처리하며, 실패한 행은 표시하고 나머지는 계속 진행합니다. 편집본 칸을 더블클릭하면 다른 편집본을 고를 수 있습니다.',
+    'b-p': '배치는 이미지 시퀀스와 무비 플레이트를 모두 지원합니다. Read들을 선택하고 <b>NMMR → No More Manual Retime (Batch Selected)</b>를 연 뒤 목록에서 각 PLATE–EDIT 짝을 확인합니다. 무비의 역할이 불명확하면 어떤 Read가 플레이트인지 직접 고릅니다. 각 행을 순서대로 처리하며, 실패한 행은 표시하고 나머지는 계속 진행합니다. 편집본 칸을 더블클릭하면 다른 편집본을 고를 수 있습니다.',
     'rv-h': 'QC 리뷰',
     'rv-p': '단일·배치에서 <b>QC 리뷰</b>를 켜면 완료된 결과를 MOV 또는 JPEG 시퀀스로 이어 붙입니다. 편집본을 50% 밝기로 깔고 구조 차이를 5배로 키워 얹습니다. 그레이딩·LUT의 넓은 톤 차이를 줄이지만 완전히 없애지는 않습니다. 밝은 윤곽은 검토할 영역이며 번인·공간 차이로도 생길 수 있습니다. 어두운 결과만으로 타이밍이 맞다고 확정할 수 없습니다. 샷·편집본·프레임 범위·일치도·경고 라벨을 함께 표시합니다.',
     'rv-p2': '<b>MOV</b>/<b>JPEG</b>, 절반/원본 해상도, 저장 폴더를 고릅니다. 비워 두면 스크립트 옆 <code class="inline">qc_review/</code> 폴더이고, 이름은 <code class="inline">&lt;스크립트&gt;_qc_&lt;YYMMDD_HHMM&gt;</code>입니다(JPEG는 같은 이름의 하위 폴더에 <code class="inline">name.####.jpg</code>로 저장하고, 저장하지 않은 스크립트는 임시 폴더를 씁니다). 이 옵션은 고급 옵션에 있고 기본은 꺼져 있으며, 켜면 QC 트리 옵션이 꺼져 있어도 QC 트리를 만듭니다. 리뷰 노드는 <b>QC Review · N shots</b> 백드롭에 따로 모이고 같은 Ctrl+Z 한 번에 포함되며, Write 노드의 렌더 콜백을 비워 두어 백업이 돌지 않습니다. 끝나면 <b>Finder에서 보기</b>로 파일을 찾아 줍니다(재생기는 열지 않습니다).',
@@ -4229,7 +4221,7 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     'pf8-e2': '플로우 보간',
     'hc2-cap': '계단: 편집 프레임마다 출력되는 정수 플레이트 프레임. 선: TimeWarp가 담는 소수 프레임 위치. 세 가지 출력 선택지는 같은 곡선을 읽습니다.',
     'h-geek': 'Benchmarks for Geeks', 's-geek': '수치를 자세히 보고 싶은 분께',
-    'geeks-open-h': 'Benchmarks for Geeks', 'geeks-open-p': '시험 정의, 코호트 경계, 환경, 현재 측정치와 한계',
+    'geeks-open-h': 'Benchmarks for Geeks', 'geeks-open-p': '시험 정의, 묶음 경계, 환경, 현재 측정치와 한계',
     'how-open-h': '작동 원리 자세히 보기', 'how-open-p': '여섯 가지 매칭 원리, 기술 임계값과 생성되는 Nuke 노드',
     'deg-h': '개발용 편집본의 열화 조건',
     'deg-p': 'L1·L2·L3는 약함에서 강함으로 나뉜 화질 단계가 아니라 서로 다른 테스트 프로필입니다. 2-pass H.264(libx264, yuv420p)에 LUT와 번인을 적용하고, 일부 사례에는 리프레임·좌우 반전·크롭·워터마크도 더합니다. 목표값은 인코더 설정이고, 실측 범위는 생성된 첫 번째·두 번째 테스트 묶음 기준이라 짧거나 복잡한 영상은 목표보다 높게 나올 수 있습니다.',
@@ -4271,7 +4263,7 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     vcap: '막대는 0%에서 시작합니다. 프레임 가중 결과이므로 전체 비율이 높아도 모든 조건에서 98%를 넘었다는 뜻은 아닙니다. 막대에 마우스를 올리거나 키보드로 포커스하면 정확한 수가 보입니다.',
     'chk-h': '네 가지 확인은 따로 셉니다',
     chk1h: '캐시 CPU 엄격 감사', chk1q: '기록된 고정 엔진 CPU 재생이 모두 엄격 비교를 통과했는가', chk1p: '기록된 편집 조건 394개를 두 모드로 모두 완료했습니다. 엄격 비교를 모두 통과했고 새 오답 프레임은 없습니다.', chk1n: '캐시 재생 동작을 검증한 것이며 새 렌더나 현재 Nuke GUI 결과는 아닙니다.',
-    chk2h: '프레임 정확도', chk2q: '정답과 같은 플레이트 프레임을 골랐는가', chk2v: '코호트별 보고', chk2p: '개발에 쓰지 않은 샷(144조건, 실제 Nuke 캐시 CPU 재생): 일반 리타임 이미지만 97.35%, 이미지 + 번인 TC 99.87%(102조건), 리프레임 92.59%와 99.80%(34조건), 4×/8× 90.10%와 100.00%(8조건). 개발 세트 캐시 CPU 일반 리타임 합계(178조건, 같은 엔진, 개발에 사용): 이미지만 분석 11,424/11,506(99.29%), 이미지 + 번인 TC 분석 11,488/11,506(99.84%). 이 중 기존 82조건은 7,229/7,290(99.16%), 7,273/7,290(99.77%)입니다. 추가 소스 코호트: 이미지만 분석 9,492/12,000(79.10%), 이미지 + 번인 TC 분석 12,000/12,000(100.00%).', chk2n: '정확도는 정답 프레임만 셉니다. ±1프레임 허용, 화질, 보간 프레임의 품질은 뜻하지 않습니다.',
+    chk2h: '프레임 정확도', chk2q: '정답과 같은 플레이트 프레임을 골랐는가', chk2v: '묶음별 보고', chk2p: '개발에 쓰지 않은 샷(144조건, 실제 Nuke 캐시 CPU 재생): 일반 리타임 이미지만 97.35%, 이미지 + 번인 TC 99.87%(102조건), 리프레임 92.59%와 99.80%(34조건), 4×/8× 90.10%와 100.00%(8조건). 개발 세트 캐시 CPU 일반 리타임 합계(178조건, 같은 엔진, 개발에 사용): 이미지만 분석 11,424/11,506(99.29%), 이미지 + 번인 TC 분석 11,488/11,506(99.84%). 이 중 기존 82조건은 7,229/7,290(99.16%), 7,273/7,290(99.77%)입니다. 추가 소스 묶음: 이미지만 분석 9,492/12,000(79.10%), 이미지 + 번인 TC 분석 12,000/12,000(100.00%).', chk2n: '정확도는 정답 프레임만 셉니다. ±1프레임 허용, 화질, 보간 프레임의 품질은 뜻하지 않습니다.',
     chk3h: '입력·덤프 무결성', chk3q: '감사 입력이나 기록 출력이 뜻밖에 바뀌었는가', chk3v: '403 + 478 불변', chk3p: '기록된 입력 해시 403개와 덤프 통계 478개가 최종 엄격 감사에서 모두 그대로였습니다.', chk3n: '해시 무결성은 기록 파일의 동일성을 보이며 다른 소재의 정확도를 보장하지 않습니다.',
     chk4h: '실제 Nuke GUI 감사', chk4q: '선택한 고정 엔진 GUI 실행이 모두 실행·저장·엄격 비교를 통과했는가', chk4p: '선택한 난조건 31개를 두 모드로 모두 완료했습니다. 62회가 모두 실행·저장됐고 남은 임시 Group이나 캐시 항목은 없습니다.', chk4n: '의도적으로 어려운 세트이며 일반 리타임 조건의 대표 정확도 표본이 아닙니다.',
     'sep-h': '개발 세트, 따로 세는 조건',
@@ -4281,7 +4273,7 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     'nn-r1a': '기존 82조건, 원본 영상 17개: 일반 리타임·고정 스케일·램프 (명시적 홀드·역재생 제외)',
     'nn-r1b': '추가 96조건, 원본 영상 12개 (홀드·역재생 포함)',
     'nn-r1c': '저움직임·정지 모호성 조건은 따로 표시: 48조건, 원본 영상 6개 (합계에 포함하지 않음)',
-    'sep-r2': '추가 소스 캐시 CPU 코호트(편집 조건 138개)',
+    'sep-r2': '추가 소스 캐시 CPU 묶음(편집 조건 138개)',
     'sep-r3': '확장: 가변 스케일·위치 50, 의도적 컷 21, 보간 슬로우 27, 긴 정지·반복 40',
     'sep-r4': '아주 작은 고정 확대 1.02배(추가 합성 편집본, 등속 / 램프)',
     na: '해당 없음',
@@ -4290,7 +4282,7 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     gap1: '개발에 쓰지 않은 샷의 일반 리타임 102개 조건 중 이미지만 분석에서 조건별 목표 98%에 못 미치는 조건은 12개, 이미지 + 번인 TC 분석에서는 2개입니다. 리프레임 34개 조건에서는 9개와 1개입니다.',
     'nn-gapt': '평균에 가려진 약점이 있습니다.',
     'nn-gap': '개발 세트에 추가한 짧은 컷 중 고정 리프레임 한 조건은 이미지만 분석에서 정답 프레임이 19/36이었습니다(번인 TC 36/36). 개발 세트의 저움직임 영상(원본 6개, 조건 48개)은 따로 집계하며 더 낮습니다. 이미지만 분석 82.85%, 번인 TC 보강 95.03%입니다.',
-    gap2t: '추가 소스 코호트, 이미지만 분석',
+    gap2t: '추가 소스 묶음, 이미지만 분석',
     gap2: '별도 추가 소스 CPU 138조건은 이미지만 분석 79.10%, 이미지 + 번인 TC 분석 100.00%입니다. 이미지만 분석 결과가 가장 뚜렷한 측정 한계입니다.',
     gap3t: '특수한 색관리 파이프라인',
     gap3: 'OCIO·ACES 프로젝트에서는 편집본과 플레이트 Read의 색공간을 직접 지정하세요. 지정하면 소수 조건에서 Nuke 기본 색관리와 비슷한 결과였고, 기본값으로 두면 멈추거나 이미지 분석 정확도가 떨어질 수 있습니다. 번인 TC를 쓰면 영향이 적습니다. 임의의 색관리 파이프라인은 별도 QC가 필요합니다.',
@@ -4299,8 +4291,8 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     'grade-note': '<b>룩 매치(Beta)</b>는 기본으로 켜져 있습니다. 최종 리타임·공간 변환 결과의 신뢰 가능한 대응 프레임 6~12개를 로컬로 렌더해 샷 전체에 고정된 Grade 하나를 추정하고, 추정에 쓰지 않은 검증 프레임이 좋아질 때만 채택합니다. 검증을 통과하면 켜진 Grade <code class="inline">NMMR_look_&lt;plate&gt;</code>가 출력 트리의 Transform 아래에 붙고 QC Difference는 그 Grade 뒤를 비교합니다. 이 Grade는 QC 비교를 또렷하게 하려는 것이며 편집본 룩을 출력하려는 것이 아닙니다. 원본 톤으로 렌더하려면 Grade를 disable하세요. 보류되면 Grade를 만들지 않습니다. TimeWarp 키와 리프레임 Transform은 그대로입니다. 분할·부분영역 사례나 근거 부족에서는 적용을 보류하고, 추가 로컬 렌더만큼 처리 시간이 늘어납니다. 실제 Nuke에서 Grade 수치·노드 연결·disable 비교·취소·저장 후 재개방을 확인했습니다. 기존 512회 재생 대조에서 프레임 경로·분수 lookup·공간 출력은 모두 그대로였습니다.',
     'grade-boundary': '룩 매치 적용은 프레임 정답 확인이 아닙니다. 가까운 오답 프레임에도 Grade가 적용될 수 있습니다. <b>2차 QC 검사(Beta)</b>는 별도 Advanced 옵션이며 기본값은 꺼짐입니다. 모든 출력 프레임의 최종 QC 입력을 분석 해상도로 로컬 재렌더해 밝기 차이가 큰 구간을 안내합니다. 추가 렌더 시간이 들고 리타임 키는 유지하며, 정지 영상이나 일부 미측정은 판정 제한으로 표시합니다. 자동 프레임 수정이나 프레임 정확도 인증은 하지 않습니다. 상세 측정값은 QC 노드 안에 저장됩니다. 분할 영역 지정과 원본별 TC 사전 검사는 별도 Beta 기능입니다.',
     'priv-h': '추가 소스 평가 · 캐시 CPU 재생',
-    'priv-p': '소스 정체·파일명·이미지는 이 배포 페이지에 싣지 않습니다. 기록된 편집 조건 138개는 별도 캐시 CPU 코호트로 채점하며 주요 결과와 합산하지 않습니다.',
-    'priv-c1': '코호트', 'priv-c3': '모드당 프레임', 'priv-r3': '추가 소스 합계',
+    'priv-p': '소스 정체·파일명·이미지는 이 배포 페이지에 싣지 않습니다. 기록된 편집 조건 138개는 별도 캐시 CPU 묶음로 채점하며 주요 결과와 합산하지 않습니다.',
+    'priv-c1': '묶음', 'priv-c3': '모드당 프레임', 'priv-r3': '추가 소스 합계',
     'priv-note': '아래 화면 내용별 분류는 고정 라벨 6개를 사용합니다. 합계는 정확히 138조건·모드당 12,000프레임이며 실패도 모두 유지했습니다.',
     g1n: '개발 세트(개발에 사용) · 캐시 CPU 재생 · 모든 조건을 같은 엔진으로 · 기본 TimeWarp 출력, 프레임 가중 · 프레임 정확도(정답 프레임만, %) · 오답 프레임 · 98% 미달 편집 조건 수',
     g1c1: '세트', g1c2: '원본 영상', g1c3: '프레임',
@@ -4333,8 +4325,8 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     'guicat-r4': '큰 카메라 이동·회전', 'guicat-r5': '그래픽·타이틀 애니메이션', 'guicat-r6': '전경·초점·컷·동작 전환이 섞인 구간',
     'guicat-x': '카테고리 합계는 이미지만 분석 정답 9,492/12,000프레임, 이미지 + 번인 TC 분석 정답 12,000/12,000프레임입니다. 캐시 CPU 재생 결과이며 과거 또는 현재 GUI 실행과 섞지 않습니다.',
     'guicat-n1': '화면 내용 라벨은 시험 구간을 설명하며 한 행의 모든 프레임이 같은 내용이라는 뜻은 아닙니다.',
-    'guicat-n2': '카테고리 표는 오차가 몰린 곳을 보여 주며, 이미지만 분석 코호트 전체 79.10%라는 결과를 바꾸지 않습니다.',
-    'guicat-n3': '측정한 코호트는 유한한 로컬 테스트 세트이며 임의의 영상에 대한 보장은 아닙니다.',
+    'guicat-n2': '카테고리 표는 오차가 몰린 곳을 보여 주며, 이미지만 분석 묶음 전체 79.10%라는 결과를 바꾸지 않습니다.',
+    'guicat-n3': '측정한 묶음는 유한한 로컬 테스트 세트이며 임의의 영상에 대한 보장은 아닙니다.',
     g4n: '점검과 환경',
     g4a: '캐시 CPU 장부 788회가 엄격 감사를 통과했고 새 오답 프레임은 없습니다.',
     g4b: '기록된 입력 해시 403개와 덤프 통계 478개가 모두 그대로였습니다.',
@@ -4360,7 +4352,7 @@ function __vbtn() { var f = null; return { setAttribute: function () {}, addEven
     pn2: '<b>저장 전에 테스트.</b> <b>현재 스크립트로 테스트</b>는 저장하지 않은 값으로 돌려 봅니다. 스크립트 경로에서 읽은 샷, 찾은 플레이트·편집본, 실패하면 어느 단계·템플릿의 어느 부분에서 멈췄는지 보여 줍니다.',
     pn3: '<b>무엇이 최신인지.</b> 플레이트는 레이어 우선순위, 가장 높은 버전, 수정 시각 순으로 고르고 최대 버전을 정할 수 있습니다. 편집본은 수정 시각, 파일 이름의 버전 번호, 또는 직접 쓴 정규식으로 고릅니다.',
     pn4: '<b>느린 저장소.</b> 한 번 찾기는 기본 15초에서 멈추고(바꿀 수 있음), 진행을 보여 주며, 버튼이나 Esc로 취소할 수 있습니다. 찾은 결과는 세션 동안 기억합니다.',
-    'p-dl': '<a href="https://github.com/vfx-compositor/no-more-manual-retime/releases/latest" rel="noopener" target="_blank">최신 릴리스 내려받기</a> · <a href="https://github.com/vfx-compositor/no-more-manual-retime" rel="noopener" target="_blank">GitHub 저장소</a> · <a href="https://www.nukepedia.com/tools/python/misc/no-more-manual-retime-auto-retime-matching/" rel="noopener" target="_blank">Nukepedia</a>', foot1: 'No More Manual Retime 1.0.0', foot2: '테스트 환경: Nuke 16.1v3 (macOS Apple Silicon), numpy 필요', 'nav7': '조건', 'rs-fig-b': '실측', 'rs-fig-s': '테스트 편집본 4개 · 프레임별', 'rs-read': '이 영상 읽는 법', 'rd-keys': '단축키', 'rd-qcmore': '형식, 라벨, 되돌리기', 'rd-pathmore': '설정 파일과 동작', 'rd-instfail': '설치가 실패하면', 'gt-a': '정의와 범위', 'gt-b': '네 가지 확인', 'gt-c': '코호트별 표', 'gt-d': '추가 소스', 'gt-e': '실제 Nuke GUI 감사', 'gk-meta': '표 7개 · 탭 5개', 'it-off': '오프라인', 'it-on': '온라인', 'it-sh': '공유 폴더', 'nk-link': '실제 실행의 Node Graph는 <a href="#how-nk">결과</a> 섹션에 있습니다.',
+    'p-dl': '<a href="https://github.com/vfx-compositor/no-more-manual-retime/releases/latest" rel="noopener" target="_blank">최신 릴리스 내려받기</a> · <a href="https://github.com/vfx-compositor/no-more-manual-retime" rel="noopener" target="_blank">GitHub 저장소</a> · <a href="https://www.nukepedia.com/tools/python/misc/no-more-manual-retime-auto-retime-matching/" rel="noopener" target="_blank">Nukepedia</a>', foot1: 'No More Manual Retime 1.0.1', foot2: '테스트 환경: Nuke 16.1v3 (macOS Apple Silicon), numpy 필요', 'nav7': '조건', 'rs-fig-b': '실측', 'rs-fig-s': '테스트 편집본 4개 · 프레임별', 'rs-read': '이 영상 읽는 법', 'rd-keys': '단축키', 'rd-qcmore': '형식, 라벨, 되돌리기', 'rd-pathmore': '설정 파일과 동작', 'rd-instfail': '설치가 실패하면', 'gt-a': '정의와 범위', 'gt-b': '네 가지 확인', 'gt-c': '묶음별 표', 'gt-d': '추가 소스', 'gt-e': '실제 Nuke GUI 감사', 'gk-meta': '표 7개 · 탭 5개', 'it-off': '오프라인', 'it-on': '온라인', 'it-sh': '공유 폴더', 'nk-link': '실제 실행의 Node Graph는 <a href="#how-nk">결과</a> 섹션에 있습니다.',
     'sm-k2': '얼마나 정확한가', 'sm-n1': '일반 리타임, 이미지만', 'sm-n2': '<span title="편집본에 찍힌 타임코드 숫자를 화면에서 직접 읽습니다(숫자 전용 OCR)">일반 리타임, 번인 TC</span>', 'nk-pan': '그래프를 탭하거나 클릭하면 전체 화면으로 열립니다. 핀치나 스크롤로 확대하고, 끌어서 이동하고, 두 번 탭하면 확대·원복됩니다.', 'nk-open': '눌러서 확대', 'sm-pre3': '약', 'sm-u3': '초', 'sm-n3': '3초 편집본 · M3 Max 128GB 기준', 'sm-tip3': '<span class="tl">측정</span>MacBook Pro(Apple M3 Max 16코어, 메모리 128GB), Nuke 16.1v3에서 실제 GUI로 110회 실행한 평균입니다(합계 2,528초 ÷ 110회).<br><span class="tl">샷 길이</span>편집본 72프레임(약 3초, 1280×720 H.264), 플레이트는 원본 비율 ProRes 422 LT(가로 1920 이하)입니다.<br><span class="tl">포함 범위</span>분석·노드 생성·저장까지이고, 준비와 QC 영상 렌더는 뺐습니다. 같은 샷의 두 번째 모드(번인 TC)는 첫 모드의 캐시를 다시 씁니다. 길이·해상도·장비가 다르면 시간도 달라집니다.', 'sm-p2': 'TimeWarp가 정답과 똑같은 플레이트 프레임을 낸 프레임 비율입니다. 일반 리타임(0.5×, 1×, 2×, 램프, 홀드, 역재생) 102조건, 모드당 8,946프레임 기준이며, 98% 이상인 조건은 이미지만 90/102, 번인 TC 100/102입니다.', 'sm-a2': '검증 결과', 'sm-k3': '직접 확인해야 합니다', 'sm-p3': '거의 정지한 구간은 리포트에 경고로 남습니다. 회전과 범위 밖 스케일은 탐색하지 않습니다. 보간 슬로우는 찾지만 정확도가 아직 약합니다.', 'sm-a3': '한계 전체', 'fs1': '불러오고 실행', 'fs3': '스크립트에 생기는 노드', 'fs4': 'QC 리뷰', 'nk-cap2': '실제 실행 한 번(Nuke 16.1v3, test11 플레이트와 편집본)의 노드 값을 그대로 그린 그림입니다. 노드 이름, 위치, 라벨, 연결, StickyNote 문구는 저장된 스크립트에서 읽었고, 노드 색은 Nuke가 노드 종류마다 쓰는 기본색입니다. 이름이 읽히도록 노드 사이 간격만 좁혔고, 썸네일은 두 영상의 첫 프레임입니다. 플레이트 쪽 <code class="inline">NMMR_look_*</code> Grade가 룩 매치이고, Transform은 광학 보정이 필요 없어 꺼져 있습니다. 노드에 마우스를 올리거나 포커스하면 하는 일이 나옵니다.', 'qc2-p': '<b>QC 리뷰</b>를 켜면 끝난 결과를 영상 하나(또는 JPEG 시퀀스)로 묶어 내보냅니다. 빠르게 훑어보는 용도라 최종 확인뿐 아니라 프리뷰에도 쓰며, 크기는 FHD(기본)·HD·원본·원본의 절반 중에서 고릅니다.', 'qc2-l1': '<b>룩 매치 + Difference (Beta)</b>(기본): 편집본과 리타임한 플레이트의 톤을 먼저 맞춘 뒤 비교하므로, 같은 곳은 어둡고 아직 다른 곳만 밝게 나옵니다.', 'qc2-l2': '<b>단순 Difference</b>: 톤 맞춤 없이 그대로 비교합니다.', 'qc2-l3': '<b>구조 차이 강조</b>: 어둡게 낮춘 편집본 위에 구조 차이를 밝게 겹칩니다.', 'qc2-l4': '<b>읽는 법:</b> 밝은 윤곽이 확인할 곳입니다. 어둡게 나왔다고 타이밍이 맞다는 증거는 아닙니다.', 'qc-look-l1': '<b>켜고 끄기:</b> 고급 옵션의 <b>QC 룩 매치 (Beta)</b>(기본 켬).', 'qc-look-l2': '<b>실행 뒤:</b> <code class="inline">NMMR_look_*</code> Grade를 disable하면 룩 매치 없이 비교하거나 렌더할 수 있습니다.',  'qc-look-p': '<b>룩 매치는 QC를 편하게 하기 위한 기능입니다.</b> 편집본은 보통 그레이딩이 들어가 있고 플레이트는 그렇지 않아, 그냥 Difference를 보면 화면 전체가 밝게 떠서 타이밍이 틀린 곳이 묻힙니다. 룩 매치는 플레이트에 고정 Grade 하나를 맞춰 실제로 다른 곳이 주로 드러나게 합니다. 편집본 룩을 출력하려는 기능이 아니고, TimeWarp 키와 찾은 프레임은 바꾸지 않습니다.', 'fl-l': '실행 흐름', 'fl-h2': '실행 흐름', 'fl-p2': '편집본과 플레이트 Read를 선택하고 실행하면 아래 세 가지가 차례로 일어납니다.', 'ref-l': '레퍼런스', 'ref-h': '필요할 때 펼쳐 보는 자세한 내용', 'ref-p': '측정값, 한계, 설치, 기능, 원리를 모았습니다. 줄을 누르면 펼쳐지고, 접힌 내용도 페이지 검색(Ctrl+F)으로 찾아집니다.', 'rf-ver-t': '정확도', 'rf-ver-d': '일반 리타임 프레임 정확도 97.35%·99.87%(리프레임 92.59%·99.80%), 아직 남은 문제, 일치도, 벤치마크 전체', 'rf-lim-t': '한계', 'rf-lim-d': '찾는 범위, 어려운 장면, 출력·QC, 타임코드', 'rf-inst-t': '설치', 'rf-inst-d': '파이썬 파일 하나와 numpy. Nuke 16.1v3 · macOS Apple Silicon에서 검증', 'rf-feat-t': '기능', 'rf-feat-d': '타임라인 제외·고정점, 배치, QC 옵션, 파일 자동 탐색, 창, 단축키', 'rf-tc-t': '번인 TC', 'rf-tc-d': '번인 위치를 한 번 지정하면 읽은 TC가 리타임의 고정점이 됩니다', 'rf-ex-t': '실제 영상 예시', 'rf-ex-d': '그레이딩·번인·저비트레이트 편집본 7개와 원본 플레이트 비교', 'rf-cond-t': '편집본 조건', 'rf-cond-d': '그레이딩, 압축, 리프레임, 번인, 램프와 홀드', 'rf-how-t': '작동 원리', 'rf-how-d': '여섯 가지 원리, 임계값, 생성되는 노드', 'nav-flow': '실행 흐름', 'nav-ref': '레퍼런스', 'nk-link': '실제 실행의 Node Graph는 <a href="#how-nk">실행 흐름 3단계</a>에 있습니다.'
   };
 
